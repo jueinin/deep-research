@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { streamText } from "ai";
+import { smoothStream, streamText } from "ai";
 import { parsePartialJson } from "@ai-sdk/ui-utils";
 import { useTranslation } from "react-i18next";
 import Plimit from "p-limit";
@@ -18,10 +18,13 @@ import {
   writeFinalReportPrompt,
   getSERPQuerySchema,
 } from "@/utils/deep-research";
-import { isNetworkingModel } from "@/utils/models";
 import { parseError } from "@/utils/error";
 import { pick, flat } from "radash";
-
+import {createPerplexity} from '@ai-sdk/perplexity'
+import {useLocalStorage} from 'react-use'
+const perplexity = createPerplexity({
+  apiKey: localStorage.getItem('pplx-api') || ''
+})
 function getResponseLanguagePrompt(lang: string) {
   return `**Respond in ${lang} language**`;
 }
@@ -49,17 +52,18 @@ function handleError(error: unknown) {
 function useDeepResearch() {
   const { t } = useTranslation();
   const taskStore = useTaskStore();
+  const [pplxModel = ''] = useLocalStorage('pplx-model', 'sonar')
   const { createProvider } = useModelProvider();
   const [status, setStatus] = useState<string>("");
   const settingStore = useSettingStore();
 
   async function askQuestions() {
-    const { thinkingModel, language } = useSettingStore.getState();
+    const { language } = useSettingStore.getState();
     const { question } = useTaskStore.getState();
     setStatus(t("research.common.thinking"));
-    const provider = createProvider("google");
+    // const provider = createProvider("google");
     const result = streamText({
-      model: provider(thinkingModel),
+      model: perplexity(pplxModel),
       system: getSystemPrompt(),
       prompt: [
         generateQuestionsPrompt(question),
@@ -76,27 +80,23 @@ function useDeepResearch() {
   }
 
   async function runSearchTask(queries: SearchTask[]) {
-    const { networkingModel, language, searchLanguage } = useSettingStore.getState();
+    const { language, searchLanguage } = useSettingStore.getState();
     setStatus(t("research.common.research"));
     const plimit = Plimit(settingStore.searchConcurrency || 1);
     const call = async (item: SearchTask) => {
       let content = "";
         const sources: Source[] = [];
         taskStore.updateTask(item.query, { state: "processing" });
-        const provider = createProvider("google");
+        // const provider = createProvider("google");
         const searchResult = streamText({
-          model: provider(
-            networkingModel,
-            isNetworkingModel(networkingModel)
-              ? { useSearchGrounding: true }
-              : {}
-          ),
+          model: perplexity(pplxModel),
           system: getSystemPrompt(),
           prompt: [
             processSearchResultPrompt(item.query, item.researchGoal),
             getResponseLanguagePrompt(searchLanguage === 'auto' ? language : searchLanguage),
           ].join("\n\n"),
           onError: handleError,
+          experimental_transform: smoothStream(),
         });
         for await (const part of searchResult.fullStream) {
           if (part.type === "text-delta") {
