@@ -148,7 +148,8 @@ class DeepResearch {
   }
 
   async generateSERPQuery(
-    reportPlan: string
+    reportPlan: string,
+    question: string,
   ): Promise<DeepResearchSearchTask[]> {
     this.onMessage("progress", { step: "serp-query", status: "start" });
     const thinkTagStreamProcessor = new ThinkTagStreamProcessor();
@@ -156,7 +157,7 @@ class DeepResearch {
       model: await this.getThinkingModel(),
       system: getSystemPrompt(),
       prompt: [
-        generateSerpQueriesPrompt(reportPlan),
+        generateSerpQueriesPrompt(reportPlan, question),
         this.getResponseLanguagePrompt(),
       ].join("\n\n"),
     });
@@ -382,6 +383,7 @@ class DeepResearch {
   }
 
   async writeFinalReport(
+    question: string,
     reportPlan: string,
     tasks: DeepResearchSearchResult[],
     enableCitationImage = true,
@@ -403,6 +405,7 @@ class DeepResearch {
       system: [getSystemPrompt(), outputGuidelinesPrompt].join("\n\n"),
       prompt: [
         writeFinalReportPrompt(
+          question,
           reportPlan,
           learnings,
           sources.map((item) => pick(item, ["title", "url"])),
@@ -479,9 +482,10 @@ class DeepResearch {
   ) {
     try {
       const reportPlan = await this.writeReportPlan(query);
-      const tasks = await this.generateSERPQuery(reportPlan);
+      const tasks = await this.generateSERPQuery(reportPlan, query);
       const results = await this.runSearchTask(tasks, enableReferences);
       const finalReport = await this.writeFinalReport(
+        query,
         reportPlan,
         results,
         enableCitationImage,

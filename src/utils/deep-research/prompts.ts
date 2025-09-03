@@ -49,8 +49,9 @@ export function writeReportPlanPrompt(query: string) {
   return reportPlanPrompt.replace("{query}", query);
 }
 
-export function generateSerpQueriesPrompt(plan: string) {
+export function generateSerpQueriesPrompt(plan: string, question: string) {
   return serpQueriesPrompt
+    .replace("{userQuestion}", question)
     .replace("{plan}", plan)
     .replace("{outputSchema}", getSERPQueryOutputSchema());
 }
@@ -114,6 +115,7 @@ export function reviewSerpQueriesPrompt(
 }
 
 export function writeFinalReportPrompt(
+  question: string,
   plan: string,
   learning: string[],
   source: Source[],
@@ -139,6 +141,7 @@ export function writeFinalReportPrompt(
       : "") +
     (enableReferences ? `\n\n${finalReportReferencesPrompt}` : "")
   )
+    .replace("{userQuestion}", question)
     .replace("{plan}", plan)
     .replace("{learnings}", learnings.join("\n"))
     .replace("{sources}", sources.join("\n"))

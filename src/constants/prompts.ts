@@ -93,7 +93,13 @@ Expected output:
 ]
 \`\`\``;
 
-export const serpQueriesPrompt = `This is the report plan after user confirmation:
+export const serpQueriesPrompt = `
+This is the question from the user manually input:
+<QUESTION>
+{userQuestion}
+</QUESTION>
+
+This is the report plan after user confirmation:
 <PLAN>
 {plan}
 </PLAN>
@@ -203,7 +209,13 @@ export const finalReportReferencesPrompt = `Citation Rules:
 - Do not have more than 3 reference link in a paragraph, and keep only the most relevant ones.
 - **Do not add references at the end of the report.**`;
 
-export const finalReportPrompt = `This is the report plan after user confirmation:
+export const finalReportPrompt = `
+This is the question from the user manually input:
+<QUESTION>
+{userQuestion}
+</QUESTION>
+
+This is the report plan after user confirmation:
 <PLAN>
 {plan}
 </PLAN>

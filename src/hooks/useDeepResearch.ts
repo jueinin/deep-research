@@ -485,6 +485,7 @@ function useDeepResearch() {
       setSources,
       requirement,
       updateFinalReport,
+      question
     } = useTaskStore.getState();
     const { save } = useHistoryStore.getState();
     const { thinkingModel } = getModel();
@@ -509,6 +510,7 @@ function useDeepResearch() {
       system: [getSystemPrompt(), outputGuidelinesPrompt].join("\n\n"),
       prompt: [
         writeFinalReportPrompt(
+          question,
           reportPlan,
           learnings,
           enableReferences
@@ -573,7 +575,7 @@ function useDeepResearch() {
   }
 
   async function deepResearch() {
-    const { reportPlan } = useTaskStore.getState();
+    const { reportPlan, question } = useTaskStore.getState();
     const { thinkingModel } = getModel();
     setStatus(t("research.common.thinking"));
     try {
@@ -582,7 +584,7 @@ function useDeepResearch() {
         model: await createModelProvider(thinkingModel),
         system: getSystemPrompt(),
         prompt: [
-          generateSerpQueriesPrompt(reportPlan),
+          generateSerpQueriesPrompt(reportPlan, question),
           getResponseLanguagePrompt(),
         ].join("\n\n"),
         experimental_transform: smoothTextStream(smoothTextStreamType),
