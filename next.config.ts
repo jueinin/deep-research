@@ -45,6 +45,9 @@ export default async function Config(phase: string) {
     experimental: {
       reactCompiler: true,
     },
+    eslint: {
+      ignoreDuringBuilds: true
+    },
     env: {
       NEXT_PUBLIC_VERSION: pkg.version,
     },

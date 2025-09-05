@@ -105,7 +105,7 @@ function mergeStockData(
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  let code = searchParams.get("code"); // example 000282.SH
+  const code = searchParams.get("code"); // example 000282.SH
   if (!code) {
     return NextResponse.json(
       { code: 400, message: "股票代码不能为空" },
