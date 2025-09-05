@@ -39,7 +39,8 @@ import { useGlobalStore } from "@/store/global";
 import { useSettingStore } from "@/store/setting";
 import { useTaskStore } from "@/store/task";
 import { useHistoryStore } from "@/store/history";
-import { Button as AntdButton } from "antd";
+import { Button as AntdButton, Popconfirm, Popover, Radio } from "antd";
+import { shortPrompt, longPrompt } from "@/components/StockSearch/defaultPrompt";
 
 const formSchema = z.object({
   topic: z.string().min(2),
@@ -60,13 +61,8 @@ function Topic() {
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [openCrawler, setOpenCrawler] = useState<boolean>(false);
   const [openStockModal, setOpenStockModal] = useState<boolean>(false);
-
-  // 打开股票搜索弹窗
-  function openStockSearchModal() {
-    if (handleCheck()) {
-      setOpenStockModal(true);
-    }
-  }
+  const [promptType, setPromptType] = useState<'short' | 'long'>('short');
+  const [promptPopoverOpen, setPromptPopoverOpen] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,6 +70,18 @@ function Topic() {
       topic: taskStore.question,
     },
   });
+  function openStockSearchModal() {
+    if (handleCheck()) {
+      const {topic} = form.getValues()
+      taskStore.setQuestion(topic);
+      setOpenStockModal(true);
+    }
+  }
+
+  function handlePromptTypeChange(e: any) {
+    const type = e.target.value as 'short' | 'long';
+    setPromptType(type);
+  }
 
   function handleCheck(): boolean {
     const { mode } = useSettingStore.getState();
@@ -163,7 +171,7 @@ function Topic() {
                 </FormLabel>
                 <FormControl>
                   <Textarea
-                    rows={3}
+                    rows={10}
                     placeholder={t("research.topic.topicPlaceholder")}
                     {...field}
                   />
@@ -215,17 +223,33 @@ function Topic() {
               </div>
             </FormControl>
           </FormItem>
-          <div>
-          <FormLabel className="mb-2 text-base font-semibold">
+          <div className="mt-2">
+          <FormLabel className="text-base font-semibold">
               1.3 拉取股票数据（可选）
             </FormLabel>
-            <div>
+            <div className="my-2 flex gap-2">
                 <AntdButton
                   onClick={openStockSearchModal}
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   搜索股票
                 </AntdButton>
+                <Popconfirm
+                  title="选择Prompt类型"
+                  description={
+                    <Radio.Group value={promptType} onChange={handlePromptTypeChange}>
+                      <Radio value="short">短Prompt</Radio>
+                      <Radio value="long">长Prompt</Radio>
+                    </Radio.Group>
+                  }
+                  onConfirm={() => taskStore.setQuestion(promptType === 'long' ? longPrompt : shortPrompt)}
+                  trigger="hover"
+                  showCancel={false}
+                >
+                  <AntdButton>
+                    选择Prompt
+                  </AntdButton>
+                </Popconfirm>
               </div>
           </div>
           <Button className="w-full mt-4" disabled={isThinking} type="submit">
