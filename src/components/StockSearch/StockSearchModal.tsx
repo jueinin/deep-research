@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Modal, Select, Button, Spin, message, Tag, Collapse } from "antd";
+import { Modal, Select, Button, Spin, message, Collapse } from "antd";
 import { useTaskStore } from "@/store/task";
 import { currentDate } from "./defaultPrompt";
 import type {

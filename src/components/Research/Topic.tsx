@@ -39,7 +39,7 @@ import { useGlobalStore } from "@/store/global";
 import { useSettingStore } from "@/store/setting";
 import { useTaskStore } from "@/store/task";
 import { useHistoryStore } from "@/store/history";
-import { Button as AntdButton, Popconfirm, Popover, Radio } from "antd";
+import { Button as AntdButton, Popconfirm, Radio } from "antd";
 import { shortPrompt, longPrompt } from "@/components/StockSearch/defaultPrompt";
 
 const formSchema = z.object({
@@ -62,7 +62,6 @@ function Topic() {
   const [openCrawler, setOpenCrawler] = useState<boolean>(false);
   const [openStockModal, setOpenStockModal] = useState<boolean>(false);
   const [promptType, setPromptType] = useState<'short' | 'long'>('short');
-  const [promptPopoverOpen, setPromptPopoverOpen] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
