@@ -1,4 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type {
+  PriceData,
+  FinancialDataResponse,
+  IndicatorDataResponse,
+  StockFinancialInfo,
+  StockFinancialInfoResponse
+} from "@/types/stock";
 
 export const runtime = "edge";
 export const preferredRegion = [
@@ -60,38 +67,52 @@ const fieldMapping: Record<string, string> = {
   "PB_MRQ_REALTIME": "市净率实时"
 };
 
-// 转换字段名为中文
-function convertFieldsToChinese(data: any[]) {
-  return data.map(item => {
-    const convertedItem: any = {};
-    for (const [key, value] of Object.entries(item)) {
-      const chineseKey = fieldMapping[key] || key;
-      convertedItem[chineseKey] = value;
-    }
-    return convertedItem;
-  });
+// 转换单个对象的字段名为中文
+function convertFieldsToChinese<T>(item: T): Record<string, any> {
+  const convertedItem: Record<string, any> = {};
+  for (const [key, value] of Object.entries(item as any)) {
+    const chineseKey = fieldMapping[key] || key;
+    convertedItem[chineseKey] = value;
+  }
+  return convertedItem;
+}
+
+// 合并财务数据、指标数据和价格数据
+function mergeStockData(
+  financialData: FinancialDataResponse,
+  indicatorData: IndicatorDataResponse,
+  priceData: PriceData
+): StockFinancialInfo {
+  const financialItem = financialData.result.data[0];
+  const indicatorItem = indicatorData.result.data[0];
+  const priceItem = priceData.data;
+  
+  // 转换财务数据为中文
+  const convertedFinancial = convertFieldsToChinese(financialItem);
+  
+  // 转换指标数据为中文
+  const convertedIndicator = convertFieldsToChinese(indicatorItem);
+  
+  // 创建整合的股票财务信息对象
+  const stockInfo: StockFinancialInfo = {
+    ...convertedFinancial,
+    ...convertedIndicator,
+    // 只添加当前价格信息
+    当前价格: priceItem.f43,
+  } as any
+  return stockInfo;
 }
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  let code = searchParams.get("code");
-
+  let code = searchParams.get("code"); // example 000282.SH
   if (!code) {
     return NextResponse.json(
       { code: 400, message: "股票代码不能为空" },
       { status: 400 }
     );
   }
-
-  // 处理股票代码格式
-  if (code.includes('.')) {
-    // 如果已经包含后缀（如 603993.SH），直接使用
-    code = code;
-  } else {
-    // 如果只有数字（如 603993），添加 .SH 后缀
-    code = `${code}.SH`;
-  }
-
+  const plainCode = code.split('.')?.[0] || ''
   try {
     // 构建东方财富API请求URL - 财务数据
     const baseUrl = "https://datacenter.eastmoney.com/securities/api/data/v1/get";
@@ -104,7 +125,8 @@ export async function GET(req: NextRequest) {
     const indicatorColumns = "SECURITY_CODE,SECUCODE";
     const quoteColumns = "f9~01~SECURITY_CODE~PE_DYNAMIC,f114~01~SECURITY_CODE~PE_STATIC,f115~01~SECURITY_CODE~PE_TTM,f23~01~SECURITY_CODE~PB_NEW_NOTICE,f20~01~SECURITY_CODE~TOTAL_MARKET_CAP";
     const indicatorUrl = `${baseUrl}?reportName=RPT_DMSK_NEWINDICATOR&columns=${indicatorColumns}&quoteColumns=${quoteColumns}&filter=${filter}&sortTypes=&sortColumns=&pageNumber=1&pageSize=1&source=HSF10&client=PC&v=${Date.now()}`;
-
+    // 价格数据
+    const priceURL = `https://push2.eastmoney.com/api/qt/stock/get?fields=f57%2Cf58%2Cf47%2Cf43%2Cf169%2Cf170%2Cf44%2Cf45%2Cf46%2Cf48%2Cf60%2Cf168%2Cf164%2Cf50%2Cf171&secid=0.${plainCode}&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&wbp2u=%7C0%7C0%7C0%7Cweb&v=${Date.now()}`
     const headers = {
       "Accept": "*/*",
       "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
@@ -121,39 +143,60 @@ export async function GET(req: NextRequest) {
     };
 
     // 并行请求两个API
-    const [financialResponse, indicatorResponse] = await Promise.all([
+    const [financialResponse, indicatorResponse, priceResponse] = await Promise.all([
       fetch(financialUrl, { method: "GET", headers }),
-      fetch(indicatorUrl, { method: "GET", headers })
+      fetch(indicatorUrl, { method: "GET", headers }),
+      fetch(priceURL, {method: 'GET', headers})
     ]);
-    if (!financialResponse.ok) {
-      throw new Error(`东方财富财务数据API请求失败: ${financialResponse.status} ${financialResponse.statusText}`);
-    }
-
-    if (!indicatorResponse.ok) {
-      throw new Error(`东方财富指标数据API请求失败: ${indicatorResponse.status} ${indicatorResponse.statusText}`);
-    }
 
     const financialData = await financialResponse.json();
     const indicatorData = await indicatorResponse.json();
-    console.log({financialData, indicatorData, financialUrl})
-    // 合并数据
-    let mergedData = { ...financialData };
+    const priceData = await priceResponse.json()
+    console.log({priceData, financialData, indicatorData})
     
-    if (financialData.result && financialData.result.data && indicatorData.result && indicatorData.result.data) {
-      // 转换财务数据字段名为中文
-      const convertedFinancialData = convertFieldsToChinese(financialData.result.data);
-      
-      // 转换指标数据字段名为中文
-      const convertedIndicatorData = convertFieldsToChinese(indicatorData.result.data);
-      
-      // 合并两个数据对象
-      mergedData.result.data = convertedFinancialData.map((financialItem, index) => {
-        const indicatorItem = convertedIndicatorData[index] || {};
-        return { ...financialItem, ...indicatorItem };
-      });
+    // 检查数据是否有效
+    if (!financialData.result || !financialData.result.data || financialData.result.data.length === 0) {
+      const errorResponse: StockFinancialInfoResponse = {
+        success: false,
+        message: "未找到财务数据",
+        code: 404,
+        data: {} as StockFinancialInfo
+      };
+      return NextResponse.json(errorResponse, { status: 404 });
     }
     
-    return NextResponse.json(mergedData);
+    if (!indicatorData.result || !indicatorData.result.data || indicatorData.result.data.length === 0) {
+      const errorResponse: StockFinancialInfoResponse = {
+        success: false,
+        message: "未找到指标数据",
+        code: 404,
+        data: {} as StockFinancialInfo
+      };
+      return NextResponse.json(errorResponse, { status: 404 });
+    }
+    
+    if (!priceData.data) {
+      const errorResponse: StockFinancialInfoResponse = {
+        success: false,
+        message: "未找到价格数据",
+        code: 404,
+        data: {} as StockFinancialInfo
+      };
+      return NextResponse.json(errorResponse, { status: 404 });
+    }
+    
+    // 合并数据为单个对象
+    const mergedStockData = mergeStockData(financialData, indicatorData, priceData);
+    
+    // 返回整合后的响应
+    const response: StockFinancialInfoResponse = {
+      success: true,
+      message: "获取股票财务信息成功",
+      code: 0,
+      data: mergedStockData
+    };
+    
+    return NextResponse.json(response);
   } catch (error) {
     console.error("获取股票财务信息失败:", error);
     if (error instanceof Error) {

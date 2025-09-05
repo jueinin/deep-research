@@ -4,35 +4,15 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Modal, Select, Button, Spin, message, Tag, Collapse } from "antd";
 import { useTaskStore } from "@/store/task";
 import { currentDate } from "./defaultPrompt";
+import type {
+  StockSearchResult,
+  StockSearchResponse,
+  StockFinancialInfo,
+  StockFinancialInfoResponse
+} from "@/types/stock";
+
 const { Panel } = Collapse;
 const { Option } = Select;
-
-interface StockSearchResult {
-  code: string;
-  innerCode: string;
-  shortName: string;
-  market: number;
-  pinyin: string;
-  securityType: number[];
-  securityTypeName: string;
-  smallType: number;
-  status: number;
-  flag: number;
-  extSmallType: number;
-}
-
-interface StockSearchResponse {
-  code: string;
-  msg: string;
-  pageIndex: number;
-  pageSize: number;
-  result: StockSearchResult[];
-  searchId: string;
-}
-
-interface StockFinancialInfo {
-  [key: string]: any;
-}
 
 interface StockSearchModalProps {
   open: boolean;
@@ -60,19 +40,19 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
   });
 
   const getFinancialInfoMutation = useMutation({
-    mutationFn: async (stockCode: string) => {
+    mutationFn: async (stockCode: string): Promise<StockFinancialInfoResponse> => {
       const response = await fetch(`/api/search/eastmoney/get-stock-financial-info?code=${stockCode}`);
       if (!response.ok) {
         throw new Error("获取财务信息失败");
       }
-      return response.json();
+      return response.json() as Promise<StockFinancialInfoResponse>;
     },
     onSuccess: (data) => {
-      if (data.result && data.result.data && data.result.data.length > 0) {
-        setFinancialData(data.result.data[0]);
+      if (data.success && data.data) {
+        setFinancialData(data.data);
         message.success("财务信息获取成功");
       } else {
-        message.warning("未找到财务信息");
+        message.warning(data.message || "未找到财务信息");
       }
     },
     onError: (error) => {
@@ -128,9 +108,10 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     // 创建映射关系
     const replacements: Record<string, string> = {
       '股票名称': selectedStock.shortName,
-      '市盈率TTM': getFinancialValue('市盈率TTM'),
+      '市盈率TTM': getFinancialValue('市盈率TTM' as keyof StockFinancialInfo),
       '财务数据表格': financialTable,
-      currentDate: currentDate
+      currentDate: currentDate,
+      当前股价: "" + financialData.当前价格
     };
 
     // 替换模板中的占位符
@@ -142,13 +123,13 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     return result;
   };
 
-  const getFinancialValue = (key: string): string => {
+  const getFinancialValue = (key: keyof StockFinancialInfo): string => {
     if (!financialData) return "-";
     
     const value = financialData[key];
     if (value === null || value === undefined) return "-";
     
-    return formatFinancialValue(key, value);
+    return formatFinancialValue(key as string, value);
   };
 
   const generateFinancialTable = (): string => {
@@ -172,8 +153,8 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     
     // 添加表格行
     importantKeys.forEach(key => {
-      if (financialData[key] !== null && financialData[key] !== undefined) {
-        const formattedValue = formatFinancialValue(key, financialData[key]);
+      if (financialData[key as keyof StockFinancialInfo] !== null && financialData[key as keyof StockFinancialInfo] !== undefined) {
+        const formattedValue = formatFinancialValue(key, financialData[key as keyof StockFinancialInfo]);
         table += `| ${key} | ${formattedValue} |\n`;
       }
     });
