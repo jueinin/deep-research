@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Modal, Select, Button, Spin, message, Collapse } from "antd";
 import { useTaskStore } from "@/store/task";
@@ -21,12 +21,13 @@ interface StockSearchModalProps {
 
 export default function StockSearchModal({ open, onClose }: StockSearchModalProps) {
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
   const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
   const [financialData, setFinancialData] = useState<StockFinancialInfo | null>(null);
   const {question, setQuestion} = useTaskStore()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["stockSearch", searchValue],
+    queryKey: ["stockSearch", debouncedSearchValue],
     queryFn: async () => {
       if (!searchValue.trim()) return null;
       
@@ -67,7 +68,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     let stockCodeWithSuffix = record.code;
     if (record.securityTypeName === "深A") {
       stockCodeWithSuffix = `${record.code}.SZ`;
-    } else if (record.securityTypeName === "沪A") {
+    } else if (record.securityTypeName === "沪A" || record.securityTypeName === '科创板') {
       stockCodeWithSuffix = `${record.code}.SH`;
     } else if (record.securityTypeName === "京A") {
       stockCodeWithSuffix = `${record.code}.BJ`;
@@ -78,9 +79,21 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     getFinancialInfoMutation.mutate(stockCodeWithSuffix);
   };
 
-  const handleSearch = (value: string) => {
+  // 使用 useCallback 创建 debounced 搜索函数
+  const handleSearch = useCallback((value: string) => {
     setSearchValue(value);
-  };
+  }, []);
+
+  // 使用 useEffect 实现 debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchValue(searchValue);
+    }, 300); // 300ms 的延迟
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchValue]);
 
   const handleInsert = () => {
     if (selectedStock) {
