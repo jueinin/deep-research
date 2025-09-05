@@ -8,12 +8,14 @@ import {
   BookText,
   Paperclip,
   Link,
+  TrendingUp,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ResourceList from "@/components/Knowledge/ResourceList";
 import Crawler from "@/components/Knowledge/Crawler";
+import StockSearchModal from "@/components/StockSearch/StockSearchModal";
 import { Button } from "@/components/Internal/Button";
 import {
   Form,
@@ -37,6 +39,7 @@ import { useGlobalStore } from "@/store/global";
 import { useSettingStore } from "@/store/setting";
 import { useTaskStore } from "@/store/task";
 import { useHistoryStore } from "@/store/history";
+import { Button as AntdButton } from "antd";
 
 const formSchema = z.object({
   topic: z.string().min(2),
@@ -56,6 +59,14 @@ function Topic() {
   } = useAccurateTimer();
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [openCrawler, setOpenCrawler] = useState<boolean>(false);
+  const [openStockModal, setOpenStockModal] = useState<boolean>(false);
+
+  // 打开股票搜索弹窗
+  function openStockSearchModal() {
+    if (handleCheck()) {
+      setOpenStockModal(true);
+    }
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -204,6 +215,19 @@ function Topic() {
               </div>
             </FormControl>
           </FormItem>
+          <div>
+          <FormLabel className="mb-2 text-base font-semibold">
+              1.3 拉取股票数据（可选）
+            </FormLabel>
+            <div>
+                <AntdButton
+                  onClick={openStockSearchModal}
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  搜索股票
+                </AntdButton>
+              </div>
+          </div>
           <Button className="w-full mt-4" disabled={isThinking} type="submit">
             {isThinking ? (
               <>
@@ -230,6 +254,10 @@ function Topic() {
         open={openCrawler}
         onClose={() => setOpenCrawler(false)}
       ></Crawler>
+      {openStockModal && <StockSearchModal
+        open={openStockModal}
+        onClose={() => setOpenStockModal(false)}
+      />}
     </section>
   );
 }

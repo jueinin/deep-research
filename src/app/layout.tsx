@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import ThemeProvider from "@/components/Provider/Theme";
 import I18Provider from "@/components/Provider/I18n";
+import Providers from "@/components/Provider/QueryClientProvider";
 import Debugger from "@/components/Internal/Debugger";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -77,15 +78,19 @@ export default function RootLayout({
         <Debugger />
       </head>
       <body className="antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <I18Provider>{children}</I18Provider>
-        </ThemeProvider>
-        <Toaster richColors toastOptions={{ duration: 3000 }} />
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <I18Provider>
+              {children}
+            </I18Provider>
+          </ThemeProvider>
+          <Toaster richColors toastOptions={{ duration: 3000 }} />
+        </Providers>
       </body>
     </html>
   );
