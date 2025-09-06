@@ -2,11 +2,12 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { match, P } from "ts-pattern";
-import { Modal, Select, Spin, Collapse } from "antd";
+import { Modal, Select, Spin, Collapse, Tag, Button, Radio } from "antd";
 import { useTaskStore } from "@/store/task";
 import { request } from "@/utils/request";
 import dayjs from "dayjs";
 import useDebounceValue from "@/hooks/useDebounceValue";
+import { useLocalStorage } from 'react-use'
 import type {
   StockSearchResult,
   StockSearchResponse,
@@ -14,6 +15,8 @@ import type {
   StockFinancialInfoResponse
 } from "@/types/stock";
 import { isNil } from "lodash";
+import { HistoryOutlined } from "@ant-design/icons";
+import { shortPrompt, longPrompt } from "./defaultPrompt";
 
 const { Panel } = Collapse;
 interface StockSearchModalProps {
@@ -28,7 +31,10 @@ type OptionType = {
 export default function StockSearchModal({ open, onClose }: StockSearchModalProps) {
   const { question, setQuestion } = useTaskStore();
   const [searchValue, setSearchValue] = useState("");
-  const debouncedSearchValue = useDebounceValue(searchValue, 300)
+  const debouncedSearchValue = useDebounceValue(searchValue, 300);
+  const { history, addSearch, removeSearch, clearHistory } = useStockSearchHistory();
+  const [promptModalVisible, setPromptModalVisible] = useState(false);
+  const [promptType, setPromptType] = useState<'short' | 'long'>('short');
   const { data: searchData, isLoading } = useQuery({
     queryKey: ["stockSearch", debouncedSearchValue],
     queryFn: async () => request<StockSearchResponse>({
@@ -38,10 +44,9 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
   });
 
   const { mutate, data: financialData, isPending } = useMutation({
-    mutationFn: async ({ stockCodeWithSuffix }: { stockCodeWithSuffix: string }) =>
-      request<StockFinancialInfoResponse>({
-        url: `/api/search/eastmoney/get-stock-financial-info?code=${stockCodeWithSuffix}`
-      }),
+    mutationFn: async ({ stockCodeWithSuffix }: { stockCodeWithSuffix: string }) => request<StockFinancialInfoResponse>({
+      url: `/api/search/eastmoney/get-stock-financial-info?code=${stockCodeWithSuffix}`
+    }),
   });
 
   return (
@@ -53,11 +58,16 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
       onCancel={onClose}
       okText={'插入'}
       onOk={() => {
-        const replacedText = generateReplacedText(financialData?.data!, question);
-        setQuestion(replacedText);
-        onClose();
+        // 检查 question 是否为空或者变量是否匹配不到
+        if (!question || !hasVariablesToReplace(question)) {
+          setPromptModalVisible(true);
+        } else {
+          const replacedText = generateReplacedText(financialData?.data!, question);
+          setQuestion(replacedText);
+          onClose();
+        }
       }}
-      okButtonProps={{ disabled: !!financialData }}
+      okButtonProps={{ disabled: !financialData }}
     >
       <div className="mb-4">
         <Select
@@ -79,10 +89,55 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
           filterOption={false}
           onChange={(_stockCode, opt) => {
             const option = opt as OptionType
-            mutate({ stockCodeWithSuffix: formatStockCode(option.item) })
+            addSearch({
+              id: `${option.item.code}-${Date.now()}`,
+              stock: option.item,
+              searchTime: Date.now(),
+              searchQuery: searchValue,
+            });
+            mutate({
+              stockCodeWithSuffix: formatStockCode(option.item),
+            })
           }}
         >
         </Select>
+
+        {!searchValue && history.length > 0 && !financialData && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <HistoryOutlined className="text-gray-500 text-sm" />
+                <span className="text-xs text-gray-500">最近搜索</span>
+              </div>
+              <Button
+                size="small"
+                type="text"
+                className="text-xs h-auto p-0"
+                onClick={clearHistory}
+              >
+                清空
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {history.slice(0, 8).map((item) => <Tag
+                key={item.id}
+                className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                closable
+                onClose={(e) => {
+                  e.preventDefault();
+                  removeSearch(item.id);
+                }}
+                onClick={() => {
+                  mutate({
+                    stockCodeWithSuffix: formatStockCode(item.stock),
+                  });
+                }}
+              >
+                {item.stock.shortName}
+              </Tag>)}
+            </div>
+          </div>
+        )}
       </div>
 
       {isPending && (
@@ -136,9 +191,37 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
           </Collapse>
         </div>
       )}
+
+      {/* Prompt 选择弹窗 */}
+      <Modal
+        title="选择 Prompt 类型"
+        open={promptModalVisible}
+        onCancel={() => setPromptModalVisible(false)}
+        onOk={() => {
+          const selectedPrompt = promptType === 'long' ? longPrompt : shortPrompt;
+          const replacedText = generateReplacedText(financialData?.data!, selectedPrompt);
+          setQuestion(replacedText);
+          setPromptModalVisible(false);
+          onClose();
+        }}
+      >
+        <Radio.Group value={promptType} onChange={(e) => setPromptType(e.target.value)}>
+          <Radio value="short">短 Prompt</Radio>
+          <Radio value="long">长 Prompt</Radio>
+        </Radio.Group>
+      </Modal>
     </Modal>
   );
 }
+
+// 定义所有可用的变量
+const AVAILABLE_VARIABLES = [
+  '股票名称',
+  '市盈率TTM',
+  '财务数据表格',
+  'currentDate',
+  '当前股价'
+] as const;
 
 const formatStockCode = (record: StockSearchResult): string => {
   const { code, securityTypeName } = record;
@@ -149,12 +232,24 @@ const formatStockCode = (record: StockSearchResult): string => {
     .otherwise(() => code);
 };
 
+// 检查模板中是否有需要替换的变量
+const hasVariablesToReplace = (template: string): boolean => {
+  const variablePattern = /{{\s*([^}\s]+)\s*}}/g;
+  let match;
+  while ((match = variablePattern.exec(template)) !== null) {
+    if (AVAILABLE_VARIABLES.includes(match[1] as typeof AVAILABLE_VARIABLES[number])) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const generateReplacedText = (
   financialData: StockFinancialInfo,
   template: string
 ) => {
   const financialTable = generateFinancialTable(financialData);
-  const replacements = {
+  const replacements: Record<typeof AVAILABLE_VARIABLES[number], string> = {
     '股票名称': financialData.证券简称,
     '市盈率TTM': getFinancialValue(financialData, '市盈率TTM' as keyof StockFinancialInfo),
     '财务数据表格': financialTable,
@@ -193,6 +288,48 @@ const generateFinancialTable = (financialData: StockFinancialInfo): string => {
     .join('\n');
   return tableHeader + tableRows;
 };
+
+const useStockSearchHistory = () => {
+  const [history, setHistory] = useLocalStorage<StockSearchHistoryItem[]>('stockSearchHistory', []);
+  const addSearch = (item: StockSearchHistoryItem) => {
+    setHistory(prevHistory => {
+      if (!prevHistory) return [];
+      const filteredHistory = prevHistory.filter(
+        (historyItem) => historyItem.stock.code !== item.stock.code
+      );
+      const newHistory = [
+        { ...item, searchTime: Date.now() },
+        ...filteredHistory.slice(0, 19), // 最多保留20条记录
+      ];
+      return newHistory;
+    });
+  };
+
+  const removeSearch = (id: string) => {
+    setHistory(prevHistory => {
+      if (!prevHistory) return [];
+      return prevHistory.filter(item => item.id !== id);
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+  };
+
+  return {
+    history: history || [],
+    addSearch,
+    removeSearch,
+    clearHistory,
+  };
+};
+
+interface StockSearchHistoryItem {
+  id: string;
+  stock: StockSearchResult;
+  searchTime: number;
+  searchQuery: string;
+}
 
 const formatFinancialValue = (key: string, value: any): string => {
   if (typeof value !== 'number') {
