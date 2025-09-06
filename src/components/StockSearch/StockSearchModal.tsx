@@ -2,8 +2,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { match, P } from "ts-pattern";
-import { Modal, Select, Button, Spin, message, Collapse } from "antd";
-import { map, get, find, flow, split } from "lodash/fp";
+import { Modal, Select, Spin, Collapse } from "antd";
 import { useTaskStore } from "@/store/task";
 import { request } from "@/utils/request";
 import dayjs from "dayjs";
@@ -38,21 +37,13 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     enabled: debouncedSearchValue.trim().length > 0,
   });
 
-
-  const getFinancialInfoMutation = useMutation({
-    mutationFn: async ({ stockCodeWithSuffix }: { stockCode: string; stockCodeWithSuffix: string }) =>
+  const { mutate, data: financialData, isPending } = useMutation({
+    mutationFn: async ({ stockCodeWithSuffix }: { stockCodeWithSuffix: string }) =>
       request<StockFinancialInfoResponse>({
         url: `/api/search/eastmoney/get-stock-financial-info?code=${stockCodeWithSuffix}`
       }),
   });
 
-  const { mutate, data: financialData, isPending } = getFinancialInfoMutation;
-
-  const handleInsert = () => {
-    const replacedText = generateReplacedText(financialData?.data!, question);
-    setQuestion(replacedText);
-    onClose();
-  };
   return (
     <Modal
       title="股票搜索"
@@ -61,30 +52,34 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
       width={900}
       onCancel={onClose}
       okText={'插入'}
-      onOk={handleInsert}
+      onOk={() => {
+        const replacedText = generateReplacedText(financialData?.data!, question);
+        setQuestion(replacedText);
+        onClose();
+      }}
       okButtonProps={{ disabled: !!financialData }}
     >
       <div className="mb-4">
         <Select
           placeholder="请输入股票名称"
-          style={{ width: '100%' }}
-          size="large"
+          className="w-full"
           showSearch
           searchValue={searchValue}
           onSearch={setSearchValue}
           loading={isLoading}
+          optionRender={({ data: { item } }) => <>
+            <div>{item.shortName} ({item.code})</div>
+            <div className="text-[12px] color-[#999000]">{item.securityTypeName}</div>
+          </>}
           options={searchData?.result?.map(stock => ({
-            label: <div>
-              <div>{stock.shortName} ({stock.code})</div>
-              <div style={{ fontSize: '12px', color: '#999' }}>{stock.securityTypeName}</div>
-            </div>,
+            label: stock.shortName,
             value: stock.code,
             item: stock
           }))}
           filterOption={false}
-          onChange={(stockCode, opt) => {
+          onChange={(_stockCode, opt) => {
             const option = opt as OptionType
-            mutate({ stockCode, stockCodeWithSuffix: formatStockCode(option.item) })
+            mutate({ stockCodeWithSuffix: formatStockCode(option.item) })
           }}
         >
         </Select>
