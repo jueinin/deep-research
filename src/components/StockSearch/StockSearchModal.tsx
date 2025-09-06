@@ -34,7 +34,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
   const debouncedSearchValue = useDebounceValue(searchValue, 300);
   const { history, addSearch, removeSearch, clearHistory } = useStockSearchHistory();
   const [promptModalVisible, setPromptModalVisible] = useState(false);
-  const [promptType, setPromptType] = useState<'short' | 'long'>('short');
+  const [promptType, setPromptType] = useState<'short' | 'long'>('long');
   const { data: searchData, isLoading } = useQuery({
     queryKey: ["stockSearch", debouncedSearchValue],
     queryFn: async () => request<StockSearchResponse>({

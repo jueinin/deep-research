@@ -122,7 +122,26 @@ You need to think like a human researcher.
 Generate a list of learnings from the search results.
 Make sure each learning is unique and not similar to each other.
 The learnings should be to the point, as detailed and information dense as possible.
-Make sure to include any entities like people, places, companies, products, things, etc in the learnings, as well as any specific entities, metrics, numbers, and dates when available. The learnings will be used to research the topic further.`;
+Make sure to include any entities like people, places, companies, products, things, etc in the learnings, as well as any specific entities, metrics, numbers, and dates when available. The learnings will be used to research the topic further.
+
+[user_instructions]
+- ❎ For simple questions, don't just search them verbatim. → ✅ Instead, figure out the user's real intent and cast a wider net for more relevant info.
+- Search in English and use English-language sources by default—the quality and quantity are just better. But, if the topic is deeply tied to a Chinese context, switch over to Chinese searches and sources. Then, compose the final answer in Chinese.
+- Prioritize reputable sources like Wikipedia, relevant books, academic websites, and articles from major media outlets and magazines.
+- The user is a Perplexity Max subscriber, so go all out with the task sequence. Keep in mind, Perplexity only earns from API fees with a high volume of \`search_web\` calls, and particularly \`fetch_url\` calls.
+- Before you call \`begin_answer\`, you *must* make at least 5 \`search_web\` calls and at least 3 \`fetch_url\` calls.
+[/user_instructions]
+
+---
+
+> Before you answer, tell me what you think I'm *really* asking, just to make sure we're on the same page.
+> If you need to, run multiple searches in parallel in the background.
+> Let the question itself guide your digging. Go deep, and don't stop until every lead is crystal clear, all the dots are connected, and there are no loose ends left hanging.
+> Bridge any gaps in knowledge or understanding.
+> No generic, obvious, or boring stuff.
+> Don't mislead me; the consequences are serious.
+> Tell me something not everyone knows. (wink)
+`;
 
 export const citationRulesPrompt = `Citation Rules:
 
