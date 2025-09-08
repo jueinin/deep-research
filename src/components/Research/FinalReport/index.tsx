@@ -39,6 +39,7 @@ import { useKnowledgeStore } from "@/store/knowledge";
 import { getSystemPrompt } from "@/utils/deep-research/prompts";
 import { downloadFile } from "@/utils/file";
 import { markdownToDoc } from "@/utils/markdown";
+import { useMobile } from "@/hooks/useMobile";
 
 const MagicDown = dynamic(() => import("@/components/MagicDown"));
 const Artifact = dynamic(() => import("@/components/Artifact"));
@@ -163,7 +164,7 @@ function FinalReport() {
   useEffect(() => {
     form.setValue("requirement", taskStore.requirement);
   }, [taskStore.requirement, form]);
-
+  const isMobile = useMobile()
   return (
     <>
       <section className="p-4 border rounded-md mt-4 print:border-none">
@@ -176,6 +177,7 @@ function FinalReport() {
               className="min-h-72"
               value={taskStore.finalReport}
               onChange={(value) => taskStore.updateFinalReport(value)}
+              hideTools={isMobile}
               tools={
                 <>
                   <div className="px-1">
