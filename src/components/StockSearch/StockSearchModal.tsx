@@ -1,41 +1,37 @@
 "use client";
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { match, P } from "ts-pattern";
 import { Modal, Select, Spin, Collapse, Tag, Button, Radio } from "antd";
 import { useTaskStore } from "@/store/task";
 import { request } from "@/utils/request";
-import dayjs from "dayjs";
 import useDebounceValue from "@/hooks/useDebounceValue";
-import { useLocalStorage } from 'react-use'
 import type {
-  StockSearchResult,
   StockSearchResponse,
   StockFinancialInfoResponse,
   TreasuryYieldResponse
 } from "@/types/stock";
 import { HistoryOutlined } from "@ant-design/icons";
 import { shortPrompt, longPrompt } from "./defaultPrompt";
+import {
+  type OptionType,
+  type FinancialDataVariables,
+  formatStockCode,
+  hasVariablesToReplace,
+  generateReplacedText,
+  useStockSearchHistory
+} from "./utils";
+
 interface StockSearchModalProps {
   open: boolean;
   onClose: () => void;
-}
-type OptionType = {
-  label: React.ReactNode,
-  value: string,
-  item: StockSearchResult
-}
-type FinancialDataVariables = {
-  stockCodeWithSuffix: string;
-  market: number;
 }
 export default function StockSearchModal({ open, onClose }: StockSearchModalProps) {
   const { question, setQuestion } = useTaskStore();
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearchValue = useDebounceValue(searchValue, 300);
   const { history, addSearch, removeSearch, clearHistory } = useStockSearchHistory();
-  const [promptModalVisible, setPromptModalVisible] = useState(false);
   const [promptType, setPromptType] = useState<'short' | 'long'>('short');
+
   const { data: searchData, isLoading } = useQuery({
     queryKey: ["stockSearch", debouncedSearchValue],
     queryFn: async () => request<StockSearchResponse>({
@@ -71,18 +67,18 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
       onCancel={onClose}
       okText={'插入'}
       onOk={() => {
-        if (!question || !hasVariablesToReplace(question)) {
-          setPromptModalVisible(true);
-        } else {
-          const replacedText = generateReplacedText(
-            financialData?.data!, 
-            question, 
-            financialDataVariables?.market || 0,
-            treasuryData
-          );
-          setQuestion(replacedText);
-          onClose();
-        }
+        const selectedPrompt = (!question || !hasVariablesToReplace(question))
+          ? (promptType === 'long' ? longPrompt : shortPrompt)
+          : question;
+
+        const replacedText = generateReplacedText(
+          financialData?.data!,
+          selectedPrompt,
+          financialDataVariables?.market || 0,
+          treasuryData
+        );
+        setQuestion(replacedText);
+        onClose();
       }}
       okButtonProps={{ disabled: !financialData }}
     >
@@ -169,8 +165,8 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
 
       {financialData?.data && (
         <div className="mt-4">
-          <Collapse 
-            defaultActiveKey={['1']} 
+          <Collapse
+            defaultActiveKey={['1']}
             className="mb-4"
             items={[
               {
@@ -203,147 +199,15 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         </div>
       )}
 
-      {/* Prompt 选择弹窗 */}
-      <Modal
-        title="选择 Prompt 类型"
-        open={promptModalVisible}
-        onCancel={() => setPromptModalVisible(false)}
-        onOk={() => {
-          const selectedPrompt = promptType === 'long' ? longPrompt : shortPrompt;
-          const replacedText = generateReplacedText(
-            financialData?.data!, 
-            selectedPrompt, 
-            financialDataVariables?.market || 0,
-            treasuryData
-          );
-          setQuestion(replacedText);
-          setPromptModalVisible(false);
-          onClose();
-        }}
-      >
-        <Radio.Group value={promptType} onChange={(e) => setPromptType(e.target.value)}>
-          <Radio value="short">短 Prompt</Radio>
-          <Radio value="long">长 Prompt</Radio>
-        </Radio.Group>
-      </Modal>
+      {financialData?.data && (!question || !hasVariablesToReplace(question)) && (
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">选择 Prompt 类型：</div>
+          <Radio.Group value={promptType} onChange={(e) => setPromptType(e.target.value)}>
+            <Radio value="short">短 Prompt</Radio>
+            <Radio value="long">长 Prompt</Radio>
+          </Radio.Group>
+        </div>
+      )}
     </Modal>
   );
-}
-
-// 定义所有可用的变量
-const AVAILABLE_VARIABLES = [
-  '股票名称',
-  '市盈率TTM',
-  '财务数据表格',
-  'currentDate',
-  '当前股价',
-  'market',
-  'cn10y',
-  'us10y'
-] as const;
-
-const formatStockCode = (record: StockSearchResult): string => {
-  const { code, securityTypeName, market } = record;
-  return match(securityTypeName)
-    .with("深A", () => `${code}.SZ`)
-    .with("沪A", "科创板", () => `${code}.SH`)
-    .with("京A", "三板", () => `${code}.BJ`)
-    .with('美股', () => `${code}.${match(market)
-      .with(105, () => 'O')
-      .with(106, () => 'N')
-      .with(107, () => 'A')
-      .run()}`)
-    .with('港股', () => `${code}.HK`)
-    .otherwise(() => code);
-};
-
-// 检查模板中是否有需要替换的变量
-const hasVariablesToReplace = (template: string): boolean => {
-  const variablePattern = /{{\s*([^}\s]+)\s*}}/g;
-  let match;
-  while ((match = variablePattern.exec(template)) !== null) {
-    if (AVAILABLE_VARIABLES.includes(match[1] as typeof AVAILABLE_VARIABLES[number])) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const generateReplacedText = (
-  financialData: Record<string, any>,
-  template: string,
-  market: number,
-  treasuryData?: TreasuryYieldResponse
-) => {
-  const financialTable = generateFinancialTable(financialData);
-  const replacements: Record<typeof AVAILABLE_VARIABLES[number], string> = {
-    '股票名称': financialData.证券简称 || '--',
-    '市盈率TTM': financialData.市盈率TTM || '--',
-    '财务数据表格': financialTable,
-    currentDate: dayjs().format('YYYY-MM-DD'),
-    market: match(market)
-      .with(105, 106, 107, () => '美股')
-      .with(0, 1, () => 'A股')
-      .with(116, () => '港股')
-      .run(),
-    当前股价: financialData.当前价格 || '--',
-    cn10y: treasuryData?.cn10y || '--',
-    us10y: treasuryData?.us10y || '--'
-  };
-  
-  return Object.entries(replacements).reduce(
-    (result, [key, value]) => result.replace(new RegExp(`{{${key}}}`, 'g'), value),
-    template
-  );
-};
-
-const generateFinancialTable = (financialData: Record<string, any>): string => {
-  const tableHeader = "| 指标名称 | 数值 |\n| --- | --- |\n";
-  const tableRows = Object.entries(financialData)
-    .filter(([key, value]) => value !== null && value !== undefined && value !== '--')
-    .map(([key, value]) => `| ${key} | ${value} |`)
-    .join('\n');
-  return tableHeader + tableRows;
-};
-
-const useStockSearchHistory = () => {
-  const [history, setHistory] = useLocalStorage<StockSearchHistoryItem[]>('stockSearchHistory', []);
-  const addSearch = (item: StockSearchHistoryItem) => {
-    setHistory(prevHistory => {
-      if (!prevHistory) return [];
-      const filteredHistory = prevHistory.filter(
-        (historyItem) => historyItem.stock.code !== item.stock.code
-      );
-      const newHistory = [
-        { ...item, searchTime: Date.now() },
-        ...filteredHistory.slice(0, 19), // 最多保留20条记录
-      ];
-      return newHistory;
-    });
-  };
-
-  const removeSearch = (id: string) => {
-    setHistory(prevHistory => {
-      if (!prevHistory) return [];
-      return prevHistory.filter(item => item.id !== id);
-    });
-  };
-
-  const clearHistory = () => {
-    setHistory([]);
-  };
-
-  return {
-    history: history || [],
-    addSearch,
-    removeSearch,
-    clearHistory,
-  };
-};
-
-interface StockSearchHistoryItem {
-  id: string;
-  stock: StockSearchResult;
-  searchTime: number;
-  searchQuery: string;
 }
