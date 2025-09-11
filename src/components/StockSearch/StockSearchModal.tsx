@@ -11,12 +11,11 @@ import { useLocalStorage } from 'react-use'
 import type {
   StockSearchResult,
   StockSearchResponse,
-  StockFinancialInfoResponse
+  StockFinancialInfoResponse,
+  TreasuryYieldResponse
 } from "@/types/stock";
 import { HistoryOutlined } from "@ant-design/icons";
 import { shortPrompt, longPrompt } from "./defaultPrompt";
-
-const { Panel } = Collapse;
 interface StockSearchModalProps {
   open: boolean;
   onClose: () => void;
@@ -45,6 +44,14 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
     enabled: debouncedSearchValue.trim().length > 0,
   });
 
+  const { data: treasuryData } = useQuery({
+    queryKey: ["treasuryYield"],
+    queryFn: () => request<TreasuryYieldResponse>({
+      url: `/api/search/eastmoney/get-treasury-yield`
+    }),
+    staleTime: 5 * 60 * 1000, // 5分钟缓存
+  });
+
   const { mutate, data: financialData, isPending, variables: financialDataVariables } = useMutation({
     mutationFn: async ({ stockCodeWithSuffix, market }: FinancialDataVariables) => request<StockFinancialInfoResponse>({
       url: `/api/search/eastmoney/get-stock-financial-info`,
@@ -67,7 +74,12 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         if (!question || !hasVariablesToReplace(question)) {
           setPromptModalVisible(true);
         } else {
-          const replacedText = generateReplacedText(financialData?.data!, question, financialDataVariables?.market || 0);
+          const replacedText = generateReplacedText(
+            financialData?.data!, 
+            question, 
+            financialDataVariables?.market || 0,
+            treasuryData
+          );
           setQuestion(replacedText);
           onClose();
         }
@@ -150,53 +162,44 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
 
       {isPending && (
         <div className="text-center py-8">
-          <Spin size="large" tip="获取财务数据中..." />
+          <Spin size="large" />
+          <div className="mt-2 text-sm text-gray-500">获取财务数据中...</div>
         </div>
       )}
 
       {financialData?.data && (
         <div className="mt-4">
-          <Collapse defaultActiveKey={['1']} className="mb-4">
-            <Panel header="财务数据" key="1">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-3 rounded-xl shadow-lg">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-2">
-                  {Object.entries(financialData.data).map(([key, value]: [string, any]) => (
-                    <div
-                      key={key}
-                      className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
-                    >
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 font-medium tracking-wide uppercase truncate">
-                        {key}
-                      </div>
-                      <div className="text-base font-bold">
-                        {match(String(value))
-                          .with(P.string.includes('%'), value => <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full text-xs">
-                            {value}
-                          </span>)
-                          .with(P.string.includes('亿'), value => <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-0.5 rounded-full text-xs">
-                            {value}
-                          </span>)
-                          .with(P.string.includes('万'), value => <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full text-xs">
-                            {value}
-                          </span>)
-                          .with(P.string.includes('元'), value => <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-0.5 rounded-full text-xs">
-                            {value}
-                          </span>)
-                          .with(P.string.includes('倍'), value => <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full text-xs">
-                            {value}
-                          </span>)
-                          .with('--', () => <span className="text-gray-400 text-sm">--</span>)
-                          .otherwise(value => <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full text-xs">
-                            {value}
-                          </span>)
-                        }
-                      </div>
+          <Collapse 
+            defaultActiveKey={['1']} 
+            className="mb-4"
+            items={[
+              {
+                key: '1',
+                label: '财务数据',
+                children: (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-3 rounded-xl shadow-lg">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-2">
+                      {Object.entries(financialData.data).map(([key, value]: [string, any]) => (
+                        <div
+                          key={key}
+                          className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
+                        >
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 font-medium tracking-wide uppercase truncate">
+                            {key}
+                          </div>
+                          <div className="text-base font-bold">
+                            <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full text-xs">
+                              {value}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </Panel>
-          </Collapse>
+                  </div>
+                )
+              }
+            ]}
+          />
         </div>
       )}
 
@@ -207,7 +210,12 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         onCancel={() => setPromptModalVisible(false)}
         onOk={() => {
           const selectedPrompt = promptType === 'long' ? longPrompt : shortPrompt;
-          const replacedText = generateReplacedText(financialData?.data!, selectedPrompt, financialDataVariables?.market || 0);
+          const replacedText = generateReplacedText(
+            financialData?.data!, 
+            selectedPrompt, 
+            financialDataVariables?.market || 0,
+            treasuryData
+          );
           setQuestion(replacedText);
           setPromptModalVisible(false);
           onClose();
@@ -229,7 +237,9 @@ const AVAILABLE_VARIABLES = [
   '财务数据表格',
   'currentDate',
   '当前股价',
-  'market'
+  'market',
+  'cn10y',
+  'us10y'
 ] as const;
 
 const formatStockCode = (record: StockSearchResult): string => {
@@ -243,6 +253,7 @@ const formatStockCode = (record: StockSearchResult): string => {
       .with(106, () => 'N')
       .with(107, () => 'A')
       .run()}`)
+    .with('港股', () => `${code}.HK`)
     .otherwise(() => code);
 };
 
@@ -261,7 +272,8 @@ const hasVariablesToReplace = (template: string): boolean => {
 const generateReplacedText = (
   financialData: Record<string, any>,
   template: string,
-  market: number
+  market: number,
+  treasuryData?: TreasuryYieldResponse
 ) => {
   const financialTable = generateFinancialTable(financialData);
   const replacements: Record<typeof AVAILABLE_VARIABLES[number], string> = {
@@ -272,9 +284,13 @@ const generateReplacedText = (
     market: match(market)
       .with(105, 106, 107, () => '美股')
       .with(0, 1, () => 'A股')
+      .with(116, () => '港股')
       .run(),
-    当前股价: financialData.当前价格 || '--'
+    当前股价: financialData.当前价格 || '--',
+    cn10y: treasuryData?.cn10y || '--',
+    us10y: treasuryData?.us10y || '--'
   };
+  
   return Object.entries(replacements).reduce(
     (result, [key, value]) => result.replace(new RegExp(`{{${key}}}`, 'g'), value),
     template

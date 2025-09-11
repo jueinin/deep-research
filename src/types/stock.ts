@@ -204,3 +204,12 @@ export interface StockSearchResponse {
   result: StockSearchResult[];
   searchId: string;
 }
+
+// 国债收益率代码类型
+export type TreasuryCode = 'cn10y' | 'us10y';
+
+// 国债收益率响应类型 - 简化为直接返回格式化后的百分比字符串
+export interface TreasuryYieldResponse {
+  cn10y?: string;  // 例如: "1.8198%"
+  us10y?: string;  // 例如: "4.0606%"
+}

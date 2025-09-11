@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import type {
   StockFinancialInfoResponse
 } from "@/types/stock";
-import { match } from "ts-pattern";
+import { match, P } from "ts-pattern";
 import { handleAStockData } from "./a";
 import { handleUSStockData } from "./us";
+import { handleHKStockData } from "./hk";
 
 export const runtime = "edge";
 export const preferredRegion = [
@@ -29,8 +30,9 @@ export async function GET(req: NextRequest) {
   }
   const plainCode = code.split('.')?.[0] || ''
   const data = await match({ market })
-    .with({ market: 1 }, { market: 0 }, () => handleAStockData({ code, plainCode, market }) as Promise<Record<string, unknown>>)
-    .with({ market: 105 }, {market: 106 }, {market: 107}, () => handleUSStockData({ code, plainCode, market }) as Promise<Record<string, unknown>>)
+    .with({ market: P.union(0, 1) }, () => handleAStockData({ code, plainCode, market }) as Promise<Record<string, unknown>>)
+    .with({ market: P.union(105, 106, 107) }, () => handleUSStockData({ code, plainCode, market }) as Promise<Record<string, unknown>>)
+    .with({ market: P.union(116) }, () => handleHKStockData({ code, plainCode, market }) as Promise<Record<string, unknown>>)
     .run()
   const response: StockFinancialInfoResponse = {
     success: true,

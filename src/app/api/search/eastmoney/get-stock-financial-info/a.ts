@@ -23,7 +23,7 @@ const aStockFieldConfig: Record<string, FieldProcessor> = {
         name: "稀释每股收益",
         process: processors.toYuan
     },
-    "BPS": { 
+    "BPS": {
         name: "每股净资产",
         process: processors.toYuan
     },

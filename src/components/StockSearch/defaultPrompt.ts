@@ -1,15 +1,3 @@
-
-// 获取当前日期，格式为yyyy-mm-dd
-const getCurrentDate = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-export const currentDate = getCurrentDate();
-
 export const shortPrompt = `价值投资分析一下{{market}} {{股票名称}}这家公司可以投资吗？   比较适合入手的价格是多少？预计持有一年。
 - 先获取先获取最新的价格，市盈率等相关信息
 - 直接给出投资建议，看好  看空  还是比较震荡这样子，给出百分比，加一起100%，并且提供目标价格区间，区间范围不要弄得很大，没啥意义。
@@ -21,12 +9,12 @@ export const shortPrompt = `价值投资分析一下{{market}} {{股票名称}}�
 - 字数不低于一万字
 - 不要照搬券商的报告，因为一些利益相关的原因，国内的券商预测基本都是增持或者买入的，很假。可以有一定的你自己的思考
 - 注意给出价格的时候，需要是前复权的价格，需要考虑最近一次的分红、送股等情况
-- 十年期国债收益率是1.74%
+- 中国十年期国债收益率是{{cn10y}}，美国十年期国债收益率是{{us10y}}
 - 综合多种估值方案，给出合适的估值。
 - 给出在基准  乐观 悲观的场景条件，以及对应的目标价格
 - 现在是{{currentDate}}
-最新财务数据：
 
+最新财务数据：
 {{财务数据表格}}
 `
 

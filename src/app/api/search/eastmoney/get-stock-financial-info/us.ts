@@ -105,7 +105,10 @@ export async function handleUSStockData({ code, plainCode, market }: { code: str
   const priceDataText = priceResponse.data;
 
   if (!stockData || !stockData.result || !stockData.result.data || !stockData.result.data.length) {
-    return {};
+    return {
+      error: "未找到美股数据",
+      message: "该股票可能不存在或暂停交易"
+    };
   }
 
   const stockInfo = stockData.result.data[0];
