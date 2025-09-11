@@ -44,8 +44,12 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
   });
 
   const { mutate, data: financialData, isPending } = useMutation({
-    mutationFn: async ({ stockCodeWithSuffix }: { stockCodeWithSuffix: string }) => request<StockFinancialInfoResponse>({
-      url: `/api/search/eastmoney/get-stock-financial-info?code=${stockCodeWithSuffix}`
+    mutationFn: async ({ stockCodeWithSuffix, market }: { stockCodeWithSuffix: string, market: number }) => request<StockFinancialInfoResponse>({
+      url: `/api/search/eastmoney/get-stock-financial-info`,
+      params: {
+        code: stockCodeWithSuffix,
+        market
+      }
     }),
   });
 
@@ -62,7 +66,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         if (!question || !hasVariablesToReplace(question)) {
           setPromptModalVisible(true);
         } else {
-          const replacedText = generateReplacedText(financialData?.data!, question);
+          const replacedText = generateReplacedText(financialData?.data! as StockFinancialInfo, question);
           setQuestion(replacedText);
           onClose();
         }
@@ -83,7 +87,8 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
           </>}
           options={searchData?.result?.map(stock => ({
             label: stock.shortName,
-            value: stock.code,
+            value: stock.innerCode,
+            key: stock.innerCode,
             item: stock
           }))}
           filterOption={false}
@@ -97,6 +102,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
             });
             mutate({
               stockCodeWithSuffix: formatStockCode(option.item),
+              market: option.item.market
             })
           }}
         >
@@ -130,6 +136,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
                 onClick={() => {
                   mutate({
                     stockCodeWithSuffix: formatStockCode(item.stock),
+                    market: item.stock.market
                   });
                 }}
               >
@@ -199,7 +206,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         onCancel={() => setPromptModalVisible(false)}
         onOk={() => {
           const selectedPrompt = promptType === 'long' ? longPrompt : shortPrompt;
-          const replacedText = generateReplacedText(financialData?.data!, selectedPrompt);
+          const replacedText = generateReplacedText(financialData?.data! as StockFinancialInfo, selectedPrompt);
           setQuestion(replacedText);
           setPromptModalVisible(false);
           onClose();
@@ -224,11 +231,16 @@ const AVAILABLE_VARIABLES = [
 ] as const;
 
 const formatStockCode = (record: StockSearchResult): string => {
-  const { code, securityTypeName } = record;
+  const { code, securityTypeName, market } = record;
   return match(securityTypeName)
     .with("深A", () => `${code}.SZ`)
     .with("沪A", "科创板", () => `${code}.SH`)
     .with("京A", "三板", () => `${code}.BJ`)
+    .with('美股', () => `${code}.${match(market)
+      .with(105, () => 'O')
+      .with(106, () => 'N')
+      .with(107, () => 'A')
+      .run()}`)
     .otherwise(() => code);
 };
 

@@ -169,6 +169,7 @@ export interface StockFinancialInfo {
   
   // 价格信息
   当前价格: number;
+  [index: string]: any
 }
 
 // API响应类型
@@ -176,7 +177,7 @@ export interface StockFinancialInfoResponse {
   success: boolean;
   message: string;
   code: number;
-  data: StockFinancialInfo;
+  data: Record<string, any>;
 }
 
 // 股票搜索结果类型
