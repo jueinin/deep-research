@@ -1,10 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import axios from "axios";
 import type {
-  PriceData,
-  FinancialDataResponse,
-  IndicatorDataResponse,
-  StockFinancialInfo,
   StockFinancialInfoResponse
 } from "@/types/stock";
 import { match } from "ts-pattern";
@@ -22,13 +17,6 @@ export const preferredRegion = [
   "hnd1",
   "kix1",
 ];
-
-
-
-
-
-
-
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code"); // example 000282.SH
