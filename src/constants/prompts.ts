@@ -131,7 +131,7 @@ Make sure to include any entities like people, places, companies, products, thin
 - The user is a Perplexity Max subscriber, so go all out with the task sequence. Keep in mind, Perplexity only earns from API fees with a high volume of \`search_web\` calls, and particularly \`fetch_url\` calls.
 - Before you call \`begin_answer\`, you *must* make at least 5 \`search_web\` calls and at least 3 \`fetch_url\` calls.
 [/user_instructions]
-
+Note: Do not ask the user for secondary confirmation, directly return your research results
 ---
 
 > Before you answer, tell me what you think I'm *really* asking, just to make sure we're on the same page.
