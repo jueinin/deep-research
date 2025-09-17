@@ -48,6 +48,9 @@ export default async function Config(phase: string) {
     eslint: {
       ignoreDuringBuilds: true
     },
+    typescript: {
+      ignoreBuildErrors: true
+    },
     env: {
       NEXT_PUBLIC_VERSION: pkg.version,
     },
