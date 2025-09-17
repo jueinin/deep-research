@@ -46,7 +46,7 @@ function MagicDown({
   };
 
   return (
-    <div className={cn("relative", className)} ref={containerRef}>
+    <div className={cn("relative min-h-[350px]", className)} ref={containerRef}>
       {mode === "view" ? (
         <div className="magicdown-view prose prose-slate dark:prose-invert max-w-full">
           <View>{value}</View>
