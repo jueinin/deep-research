@@ -31,7 +31,8 @@ export const AVAILABLE_VARIABLES = [
   '当前股价',
   'market',
   'cn10y',
-  'us10y'
+  'us10y',
+  '成本价建议'
 ] as const;
 
 // 工具函数
@@ -66,9 +67,14 @@ export const generateReplacedText = (
   financialData: Record<string, any>,
   template: string,
   market: number,
-  treasuryData?: TreasuryYieldResponse
+  treasuryData?: TreasuryYieldResponse,
+  costPrice?: string
 ) => {
   const financialTable = generateFinancialTable(financialData);
+  const costPriceSuggestion = costPrice
+    ? `- 我的成本价是${costPrice}元，请给出一些建议。`
+    : '';
+  
   const replacements: Record<typeof AVAILABLE_VARIABLES[number], string> = {
     '股票名称': financialData.证券简称 || '--',
     '市盈率TTM': financialData.市盈率TTM || '--',
@@ -81,7 +87,8 @@ export const generateReplacedText = (
       .run(),
     当前股价: financialData.当前价格 || '--',
     cn10y: treasuryData?.cn10y || '--',
-    us10y: treasuryData?.us10y || '--'
+    us10y: treasuryData?.us10y || '--',
+    '成本价建议': costPriceSuggestion
   };
   
   return Object.entries(replacements).reduce(

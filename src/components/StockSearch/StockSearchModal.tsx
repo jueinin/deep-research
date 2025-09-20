@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Modal, Select, Spin, Collapse, Tag, Button, Radio } from "antd";
+import { Modal, Select, Spin, Collapse, Tag, Button, Radio, Input } from "antd";
 import { useTaskStore } from "@/store/task";
 import { request } from "@/utils/request";
 import useDebounceValue from "@/hooks/useDebounceValue";
+import { useLocalStorage } from "react-use";
 import type {
   StockSearchResponse,
   StockFinancialInfoResponse,
@@ -31,6 +32,8 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
   const debouncedSearchValue = useDebounceValue(searchValue, 300);
   const { history, addSearch, removeSearch, clearHistory } = useStockSearchHistory();
   const [promptType, setPromptType] = useState<'short' | 'long'>('short');
+  const [costPrice, setCostPrice] = useState("");
+  const [stockCostPrices, setStockCostPrices] = useLocalStorage<Record<string, number>>("stockCostPrices", {});
 
   const { data: searchData, isLoading } = useQuery({
     queryKey: ["stockSearch", debouncedSearchValue],
@@ -70,13 +73,23 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         const selectedPrompt = (!question || !hasVariablesToReplace(question))
           ? (promptType === 'long' ? longPrompt : shortPrompt)
           : question;
-
+        const stockKey = `${financialDataVariables?.stockCodeWithSuffix}-${financialDataVariables?.market}`;
+        
         const replacedText = generateReplacedText(
           financialData?.data!,
           selectedPrompt,
           financialDataVariables?.market || 0,
-          treasuryData
+          treasuryData,
+          costPrice
         );
+        
+        if (costPrice) {
+          setStockCostPrices(prev => ({
+            ...prev,
+            [stockKey]: parseFloat(costPrice)
+          }));
+        }
+        
         setQuestion(replacedText);
         onClose();
       }}
@@ -87,9 +100,9 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
           placeholder="请输入股票名称"
           className="w-full"
           showSearch
-          ref={ref => {
-            ref && ref.focus()
-          }}
+          // ref={ref => {
+          //   ref && ref.focus()
+          // }}
           autoFocus
           searchValue={searchValue}
           onSearch={setSearchValue}
@@ -113,6 +126,8 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
               searchTime: Date.now(),
               searchQuery: searchValue,
             });
+            const stockKey = `${formatStockCode(option.item)}-${option.item.market}`;
+            setCostPrice(stockCostPrices![stockKey]?.toString() || "");
             mutate({
               stockCodeWithSuffix: formatStockCode(option.item),
               market: option.item.market
@@ -147,6 +162,8 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
                   removeSearch(item.id);
                 }}
                 onClick={() => {
+                  const stockKey = `${formatStockCode(item.stock)}-${item.stock.market}`;
+                  setCostPrice(stockCostPrices![stockKey]?.toString() || "");
                   mutate({
                     stockCodeWithSuffix: formatStockCode(item.stock),
                     market: item.stock.market
@@ -210,6 +227,23 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
             <Radio value="short">短 Prompt</Radio>
             <Radio value="long">长 Prompt</Radio>
           </Radio.Group>
+          
+          <div className="mt-4">
+            <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+              成本价（可选）：
+            </div>
+            <Input
+              placeholder="请输入您的成本价"
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+              type="number"
+              addonAfter="元"
+              className="w-[200px]"
+            />
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              输入成本价后，系统将基于您的成本价提供个性化投资建议
+            </div>
+          </div>
         </div>
       )}
     </Modal>
