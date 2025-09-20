@@ -87,6 +87,10 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
           placeholder="请输入股票名称"
           className="w-full"
           showSearch
+          ref={ref => {
+            ref && ref.focus()
+          }}
+          autoFocus
           searchValue={searchValue}
           onSearch={setSearchValue}
           loading={isLoading}
