@@ -27,8 +27,8 @@ interface TaskFunction {
   setSuggestion: (suggestion: string) => void;
   setRequirement: (requirement: string) => void;
   setQuery: (query: string) => void;
-  updateTask: (query: string, task: Partial<SearchTask>) => void;
-  removeTask: (query: string) => boolean;
+  updateTask: (id: number, task: Partial<SearchTask>) => void;
+  removeTask: (id: number) => boolean;
   setQuestion: (question: string) => void;
   addResource: (resource: Resource) => void;
   updateResource: (id: string, resource: Partial<Resource>) => void;
@@ -74,15 +74,15 @@ export const useTaskStore = create(
       setSuggestion: (suggestion) => set(() => ({ suggestion })),
       setRequirement: (requirement) => set(() => ({ requirement })),
       setQuery: (query) => set(() => ({ query })),
-      updateTask: (query, task) => {
+      updateTask: (id, task) => {
         const newTasks = get().tasks.map((item) => {
-          return item.query === query ? { ...item, ...task } : item;
+          return item.id === id ? { ...item, ...task } : item;
         });
         set(() => ({ tasks: [...newTasks] }));
       },
-      removeTask: (query) => {
+      removeTask: (id) => {
         set((state) => ({
-          tasks: state.tasks.filter((task) => task.query !== query),
+          tasks: state.tasks.filter((task) => task.id !== id),
         }));
         return true;
       },

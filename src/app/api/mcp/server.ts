@@ -240,6 +240,7 @@ export function initMcpServer() {
           z.object({
             query: z.string().describe("Information to be queried."),
             researchGoal: z.string().describe("The goal of this query task."),
+            id: z.number().describe("The id of the query task."),
           })
         )
         .describe("Information Collection Task List."),

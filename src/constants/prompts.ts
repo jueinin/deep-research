@@ -88,7 +88,8 @@ Expected output:
 [
   {
     query: "This is a sample query.",
-    researchGoal: "This is the reason for the query."
+    researchGoal: "This is the reason for the query.",
+    id: 1
   }
 ]
 \`\`\``;

@@ -66,7 +66,7 @@ function TaskState({ state }: { state: SearchTask["state"] }) {
 function SearchResult() {
   const { t } = useTranslation();
   const taskStore = useTaskStore();
-  const { status, runSearchTask, reviewSearchResult } = useDeepResearch();
+  const { status, runSingleSearch, reviewSearchResult } = useDeepResearch();
   const { generateId } = useKnowledge();
   const {
     formattedTime,
@@ -119,7 +119,7 @@ function SearchResult() {
       accurateTimerStart();
       setIsThinking(true);
       if (unfinishedTasks.length > 0) {
-        await runSearchTask(unfinishedTasks);
+        unfinishedTasks.forEach(item => runSingleSearch(item));
       } else {
         if (values.suggestion) setSuggestion(values.suggestion);
         await reviewSearchResult();
@@ -146,9 +146,10 @@ function SearchResult() {
     toast.message(t("research.common.addToKnowledgeBaseTip"));
   }
 
-  async function handleRetry(query: string, researchGoal: string) {
+  async function handleRetry(query: string, researchGoal: string, id: number) {
     const { updateTask } = useTaskStore.getState();
     const newTask: SearchTask = {
+      id,
       query,
       researchGoal,
       learning: "",
@@ -156,13 +157,13 @@ function SearchResult() {
       images: [],
       state: "unprocessed",
     };
-    updateTask(query, newTask);
-    await runSearchTask([newTask]);
+    updateTask(id, newTask);
+    await runSingleSearch(newTask);
   }
 
-  function handleRemove(query: string) {
+  function handleRemove(id: number) {
     const { removeTask } = useTaskStore.getState();
-    removeTask(query);
+    removeTask(id);
   }
 
   useEffect(() => {
@@ -196,7 +197,7 @@ function SearchResult() {
                     <MagicDown
                       value={item.learning}
                       onChange={(value) =>
-                        taskStore.updateTask(item.query, { learning: value })
+                        taskStore.updateTask(item.id, { learning: value })
                       }
                       tools={
                         <>
@@ -212,7 +213,7 @@ function SearchResult() {
                             side="left"
                             sideoffset={8}
                             onClick={() =>
-                              handleRetry(item.query, item.researchGoal)
+                              handleRetry(item.query, item.researchGoal, item.id)
                             }
                           >
                             <RotateCcw />
@@ -225,7 +226,7 @@ function SearchResult() {
                             title={t("research.common.delete")}
                             side="left"
                             sideoffset={8}
-                            onClick={() => handleRemove(item.query)}
+                            onClick={() => handleRemove(item.id)}
                           >
                             <Trash />
                           </Button>

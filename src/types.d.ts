@@ -37,6 +37,7 @@ interface Source {
 }
 
 interface SearchTask {
+  id: number;
   state: "unprocessed" | "processing" | "completed" | "failed";
   query: string;
   researchGoal: string;

@@ -26,8 +26,9 @@ export function getSERPQuerySchema() {
             .describe(
               "First talk about the goal of the research that this query is meant to accomplish, then go deeper into how to advance the research once the results are found, mention additional research directions. Be as specific as possible, especially for additional research directions. JSON reserved words should be escaped."
             ),
+          id: z.number().describe("The id of the query."),
         })
-        .required({ query: true, researchGoal: true })
+        .required({ query: true, researchGoal: true, id: true })
     )
     .describe(`List of SERP queries.`);
 }

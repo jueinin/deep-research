@@ -44,6 +44,7 @@ interface FinalReportResult {
 
 export interface DeepResearchSearchTask {
   query: string;
+  id: number;
   researchGoal: string;
 }
 
@@ -171,9 +172,10 @@ class DeepResearch {
     const result = querySchema.safeParse(data);
     if (result.success) {
       const tasks: DeepResearchSearchTask[] = data.map(
-        (item: { query: string; researchGoal?: string }) => ({
+        (item: { query: string; researchGoal?: string, id: number }) => ({
           query: item.query,
           researchGoal: item.researchGoal || "",
+          id: item.id,
         })
       );
       this.onMessage("progress", {
@@ -363,6 +365,7 @@ class DeepResearch {
       this.onMessage("message", { type: "text", text: "\n</search-task>\n\n" });
 
       const task: SearchTask = {
+        id: item.id,
         query: item.query,
         researchGoal: item.researchGoal,
         state: "completed",
