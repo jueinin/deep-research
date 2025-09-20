@@ -29,6 +29,7 @@ import { isNetworkingModel } from "@/utils/model";
 import { ThinkTagStreamProcessor, removeJsonMarkdown } from "@/utils/text";
 import { parseError } from "@/utils/error";
 import { pick, flat, unique } from "radash";
+import { sendNotification } from "@/utils/notification";
 
 type ProviderOptions = Record<string, Record<string, JSONValue>>;
 type Tools = Record<string, Tool>;
@@ -336,6 +337,10 @@ function useDeepResearch() {
       }
     }
     if (reasoning) console.log(reasoning);
+    sendNotification({
+      title: 'deep research',
+      body: '反问环节完成',
+    });
   }
 
   async function writeReportPlan() {
@@ -371,6 +376,10 @@ function useDeepResearch() {
       }
     }
     if (reasoning) console.log(reasoning);
+    sendNotification({
+      title: 'deep research',
+      body: '撰写报告方案完成',
+    });
     return content;
   }
 
@@ -655,6 +664,15 @@ function useDeepResearch() {
       }
       if (reasoning) console.log(reasoning);
       runSingleSearch(queries.at(-1)!);
+      const id = setInterval(() => {
+        if (useTaskStore.getState().tasks.every(task => task.state === "completed")) {
+          sendNotification({
+            title: 'deep research',
+            body: '深度研究完成',
+          });
+          clearInterval(id);
+        }
+      }, 1000);
     } catch (err) {
       console.error(err);
     }
