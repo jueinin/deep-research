@@ -9,7 +9,8 @@ import { useLocalStorage } from "react-use";
 import type {
   StockSearchResponse,
   StockFinancialInfoResponse,
-  TreasuryYieldResponse
+  TreasuryYieldResponse,
+  StockSearchResult
 } from "@/types/stock";
 import { HistoryOutlined } from "@ant-design/icons";
 import { shortPrompt, longPrompt } from "./defaultPrompt";
@@ -34,6 +35,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
   const [promptType, setPromptType] = useState<'short' | 'long'>('short');
   const [costPrice, setCostPrice] = useState("");
   const [stockCostPrices, setStockCostPrices] = useLocalStorage<Record<string, number>>("stockCostPrices", {});
+  const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
 
   const { data: searchData, isLoading } = useQuery({
     queryKey: ["stockSearch", debouncedSearchValue],
@@ -91,6 +93,10 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
         }
         
         setQuestion(replacedText);
+        if (selectedStock?.shortName) {
+          document.title = selectedStock.shortName;
+        }
+        
         onClose();
       }}
       okButtonProps={{ disabled: !financialData }}
@@ -128,6 +134,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
             });
             const stockKey = `${formatStockCode(option.item)}-${option.item.market}`;
             setCostPrice(stockCostPrices![stockKey]?.toString() || "");
+            setSelectedStock(option.item);
             mutate({
               stockCodeWithSuffix: formatStockCode(option.item),
               market: option.item.market
@@ -164,6 +171,7 @@ export default function StockSearchModal({ open, onClose }: StockSearchModalProp
                 onClick={() => {
                   const stockKey = `${formatStockCode(item.stock)}-${item.stock.market}`;
                   setCostPrice(stockCostPrices![stockKey]?.toString() || "");
+                  setSelectedStock(item.stock);
                   mutate({
                     stockCodeWithSuffix: formatStockCode(item.stock),
                     market: item.stock.market
