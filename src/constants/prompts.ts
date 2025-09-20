@@ -83,13 +83,13 @@ export const serpQuerySchemaPrompt = `You MUST respond in **JSON** matching this
 \`\`\`
 
 Expected output:
-
+note: id should be a random number, no need to be sequential
 \`\`\`json
 [
   {
     query: "This is a sample query.",
     researchGoal: "This is the reason for the query.",
-    id: 1
+    id: 836423
   }
 ]
 \`\`\``;
@@ -104,6 +104,8 @@ This is the report plan after user confirmation:
 <PLAN>
 {plan}
 </PLAN>
+
+The user's preferred number of search queries is set to {searchMaxResult}. Please flexibly determine how many SERP queries to generate based on the complexity of the report plan and research needs, rather than strictly following the user's setting. If the report plan is relatively simple, you may reduce the number of queries appropriately; if the report plan is complex or involves multiple aspects, you may increase the number of queries appropriately. Please ensure that the number of generated queries does not differ significantly from the user's setting.
 
 Based on previous report plan, generate a list of SERP queries to further research the topic. Make sure each query is unique and not similar to each other.
 

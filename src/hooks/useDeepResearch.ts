@@ -607,7 +607,7 @@ function useDeepResearch() {
         model: await createModelProvider(thinkingModel),
         system: getSystemPrompt(),
         prompt: [
-          generateSerpQueriesPrompt(reportPlan, question),
+          generateSerpQueriesPrompt(reportPlan, question, useSettingStore.getState().searchMaxResult),
           getResponseLanguagePrompt(),
         ].join("\n\n"),
         experimental_transform: smoothTextStream(smoothTextStreamType),

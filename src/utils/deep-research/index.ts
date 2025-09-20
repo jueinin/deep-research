@@ -158,7 +158,7 @@ class DeepResearch {
       model: await this.getThinkingModel(),
       system: getSystemPrompt(),
       prompt: [
-        generateSerpQueriesPrompt(reportPlan, question),
+        generateSerpQueriesPrompt(reportPlan, question, 10),
         this.getResponseLanguagePrompt(),
       ].join("\n\n"),
     });

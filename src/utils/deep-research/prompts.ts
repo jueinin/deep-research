@@ -50,10 +50,11 @@ export function writeReportPlanPrompt(query: string) {
   return reportPlanPrompt.replace("{query}", query);
 }
 
-export function generateSerpQueriesPrompt(plan: string, question: string) {
+export function generateSerpQueriesPrompt(plan: string, question: string, searchMaxResult: number) {
   return serpQueriesPrompt
     .replace("{userQuestion}", question)
     .replace("{plan}", plan)
+    .replace("{searchMaxResult}", searchMaxResult.toString())
     .replace("{outputSchema}", getSERPQueryOutputSchema());
 }
 
