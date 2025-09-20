@@ -63,6 +63,26 @@ function TaskState({ state }: { state: SearchTask["state"] }) {
   }
 }
 
+function TaskDuration({ task }: { task: SearchTask }) {
+  const { formattedTime, start, stop } = useAccurateTimer();
+  console.log({task})
+  useEffect(() => {
+    if (task.state === "processing") {
+      start();
+    } else if (task.state === "completed" || task.state === "failed" || task.state === "unprocessed") {
+      stop({keepTime: true});
+    }
+  }, [task.state]);
+  
+  if (task.state === "unprocessed") return null;
+  
+  return (
+    <span className="text-xs text-muted-foreground ml-2">
+      {formattedTime}
+    </span>
+  );
+}
+
 function SearchResult() {
   const { t } = useTranslation();
   const taskStore = useTaskStore();
@@ -184,9 +204,12 @@ function SearchResult() {
               return (
                 <AccordionItem key={idx} value={item.query}>
                   <AccordionTrigger>
-                    <div className="flex">
-                      <TaskState state={item.state} />
-                      <span className="ml-1">{item.query}</span>
+                    <div className="flex items-center w-full justify-between">
+                      <div className="flex items-center">
+                        <TaskState state={item.state} />
+                        <span className="ml-1">{item.query}</span>
+                      </div>
+                      <TaskDuration task={item} />
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="prose prose-slate dark:prose-invert max-w-full min-h-20">

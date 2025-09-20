@@ -36,13 +36,14 @@ function useAccurateTimer() {
     }
   }
 
-  function stop() {
+  function stop(params?: {keepTime?: boolean}) {
+    const { keepTime = false } = params || {};
     if (timerRef.current) {
       setIsRunning(false);
       cancelAnimationFrame(timerRef.current);
       timerRef.current = null;
     }
-    setTime(0);
+    !keepTime && setTime(0);
   }
 
   useEffect(() => {
