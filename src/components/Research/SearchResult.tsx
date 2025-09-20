@@ -65,7 +65,6 @@ function TaskState({ state }: { state: SearchTask["state"] }) {
 
 function TaskDuration({ task }: { task: SearchTask }) {
   const { formattedTime, start, stop } = useAccurateTimer();
-  console.log({task})
   useEffect(() => {
     if (task.state === "processing") {
       start();
