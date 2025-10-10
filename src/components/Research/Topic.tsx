@@ -41,6 +41,7 @@ import { useTaskStore } from "@/store/task";
 import { useHistoryStore } from "@/store/history";
 import { Button as AntdButton, Popconfirm, Radio } from "antd";
 import { shortPrompt, longPrompt } from "@/components/StockSearch/defaultPrompt";
+import { emitter } from "@/utils/eventEmitter";
 
 const formSchema = z.object({
   topic: z.string().min(2),
@@ -96,6 +97,7 @@ function Topic() {
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     if (handleCheck()) {
       const { id, setQuestion } = useTaskStore.getState();
+      const { autoMode } = useSettingStore.getState();
       try {
         setIsThinking(true);
         accurateTimerStart();
@@ -105,6 +107,10 @@ function Topic() {
         }
         setQuestion(values.topic);
         await askQuestions();
+        
+        if (autoMode === "enable") {
+          emitter.emit("askQuestionsFinished");
+        }
       } finally {
         setIsThinking(false);
         accurateTimerStop();

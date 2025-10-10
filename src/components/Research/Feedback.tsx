@@ -17,7 +17,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import useDeepResearch from "@/hooks/useDeepResearch";
 import useAccurateTimer from "@/hooks/useAccurateTimer";
+import { useAutoModeEvent } from "@/utils/eventEmitter";
 import { useTaskStore } from "@/store/task";
+import { useSettingStore } from "@/store/setting";
 
 const MagicDown = dynamic(() => import("@/components/MagicDown"));
 
@@ -57,6 +59,7 @@ function Feedback() {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     const { question, questions, setFeedback } = useTaskStore.getState();
+    const { autoMode } = useSettingStore.getState();
     setFeedback(values.feedback);
     const prompt = [
       `Initial Query: ${question}`,
@@ -69,6 +72,10 @@ function Feedback() {
       setIsThinking(true);
       await writeReportPlan();
       setIsThinking(false);
+      
+      if (autoMode === "enable") {
+        await startDeepResearch();
+      }
     } finally {
       accurateTimerStop();
     }
@@ -77,6 +84,12 @@ function Feedback() {
   useEffect(() => {
     form.setValue("feedback", taskStore.feedback);
   }, [taskStore.feedback, form]);
+  
+  useAutoModeEvent('askQuestionsFinished', async () => {
+    const { autoMode } = useSettingStore.getState();
+    if (autoMode !== "enable") return;
+    await handleSubmit(form.getValues());
+  });
 
   return (
     <section className="p-4 border rounded-md mt-4 print:hidden">

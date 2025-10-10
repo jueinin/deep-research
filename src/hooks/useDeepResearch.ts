@@ -30,6 +30,7 @@ import { ThinkTagStreamProcessor, removeJsonMarkdown } from "@/utils/text";
 import { parseError } from "@/utils/error";
 import { pick, flat, unique } from "radash";
 import { sendNotification } from "@/utils/notification";
+import { emitter } from "@/utils/eventEmitter";
 
 type ProviderOptions = Record<string, Record<string, JSONValue>>;
 type Tools = Record<string, Tool>;
@@ -599,6 +600,7 @@ function useDeepResearch() {
 
   async function deepResearch() {
     const { reportPlan, question } = useTaskStore.getState();
+    const { autoMode } = useSettingStore.getState();
     const { thinkingModel } = getModel();
     setStatus(t("research.common.thinking"));
     try {
@@ -670,6 +672,10 @@ function useDeepResearch() {
             title: 'deep research',
             body: '深度研究完成',
           });
+          if (autoMode === "enable") {
+            emitter.emit("searchFinished");
+          }
+          
           clearInterval(id);
         }
       }, 1000);

@@ -160,6 +160,7 @@ const formSchema = z.object({
   language: z.string().optional(),
   theme: z.string().optional(),
   debug: z.string().optional(),
+  autoMode: z.string().optional(),
   references: z.string().optional(),
   citationImage: z.string().optional(),
   smoothTextStreamType: z.enum(["character", "word", "line"]).optional(),
@@ -3304,6 +3305,34 @@ function Setting({ open, onClose }: SettingProps) {
                       <FormLabel className="from-label">
                         <HelpTip tip={t("setting.debugTip")}>
                           {t("setting.debug")}
+                        </HelpTip>
+                      </FormLabel>
+                      <FormControl>
+                        <Select {...field} onValueChange={field.onChange}>
+                          <SelectTrigger className="form-field">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="enable">
+                              {t("setting.enable")}
+                            </SelectItem>
+                            <SelectItem value="disable">
+                              {t("setting.disable")}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="autoMode"
+                  render={({ field }) => (
+                    <FormItem className="from-item">
+                      <FormLabel className="from-label">
+                        <HelpTip tip={t("setting.autoModeTip")}>
+                          {t("setting.autoMode")}
                         </HelpTip>
                       </FormLabel>
                       <FormControl>

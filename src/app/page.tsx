@@ -45,9 +45,24 @@ function Home() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [reset]);
+  const { autoMode } = useSettingStore();
+
   return (
     <div className="max-lg:max-w-screen-md max-w-screen-lg mx-auto px-4">
       <Header />
+      {autoMode === "enable" ? (
+        <div className="mb-4 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-md flex items-center gap-2 print:hidden">
+          <span className="text-amber-800 dark:text-amber-200 text-sm flex-1">
+            {t("setting.autoModeBanner")}
+          </span>
+          <button
+            onClick={() => setOpenSetting(true)}
+            className="text-xs text-amber-700 dark:text-amber-300 hover:underline underline-offset-2"
+          >
+            {t("setting.title")}
+          </button>
+        </div>
+      ) : null}
       <main>
         <Topic />
         <Feedback />

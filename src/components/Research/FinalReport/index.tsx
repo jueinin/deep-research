@@ -34,8 +34,10 @@ import { Separator } from "@/components/ui/separator";
 import useAccurateTimer from "@/hooks/useAccurateTimer";
 import useDeepResearch from "@/hooks/useDeepResearch";
 import useKnowledge from "@/hooks/useKnowledge";
+import { useAutoModeEvent } from "@/utils/eventEmitter";
 import { useTaskStore } from "@/store/task";
 import { useKnowledgeStore } from "@/store/knowledge";
+import { useSettingStore } from "@/store/setting";
 import { getSystemPrompt } from "@/utils/deep-research/prompts";
 import { downloadFile } from "@/utils/file";
 import { markdownToDoc } from "@/utils/markdown";
@@ -164,6 +166,13 @@ function FinalReport() {
   useEffect(() => {
     form.setValue("requirement", taskStore.requirement);
   }, [taskStore.requirement, form]);
+
+  useAutoModeEvent("searchFinished", async () => {
+    const { autoMode } = useSettingStore.getState();
+    if (autoMode !== "enable" || !taskFinished) return;
+    await handleSubmit(form.getValues());
+  });
+
   const isMobile = useMobile()
   return (
     <>
