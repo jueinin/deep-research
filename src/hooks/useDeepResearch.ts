@@ -305,6 +305,7 @@ function useDeepResearch() {
 
   async function askQuestions() {
     const { question } = useTaskStore.getState();
+    const { autoMode } = useSettingStore.getState();
     const { thinkingModel } = getModel();
     setStatus(t("research.common.thinking"));
     const thinkTagStreamProcessor = new ThinkTagStreamProcessor();
@@ -338,14 +339,18 @@ function useDeepResearch() {
       }
     }
     if (reasoning) console.log(reasoning);
-    sendNotification({
-      title: 'deep research',
-      body: '反问环节完成',
-    });
+    
+    if (autoMode !== "enable") {
+      sendNotification({
+        title: 'deep research',
+        body: '反问环节完成',
+      });
+    }
   }
 
   async function writeReportPlan() {
     const { query } = useTaskStore.getState();
+    const { autoMode } = useSettingStore.getState();
     const { thinkingModel } = getModel();
     setStatus(t("research.common.thinking"));
     const thinkTagStreamProcessor = new ThinkTagStreamProcessor();
@@ -377,10 +382,14 @@ function useDeepResearch() {
       }
     }
     if (reasoning) console.log(reasoning);
-    sendNotification({
-      title: 'deep research',
-      body: '撰写报告方案完成',
-    });
+    
+    // Only send notification in manual mode
+    if (autoMode !== "enable") {
+      sendNotification({
+        title: 'deep research',
+        body: '撰写报告方案完成',
+      });
+    }
     return content;
   }
 
@@ -668,14 +677,14 @@ function useDeepResearch() {
       runSingleSearch(queries.at(-1)!);
       const id = setInterval(() => {
         if (useTaskStore.getState().tasks.every(task => task.state === "completed")) {
-          sendNotification({
-            title: 'deep research',
-            body: '深度研究完成',
-          });
-          if (autoMode === "enable") {
+          if (autoMode !== "enable") {
+            sendNotification({
+              title: 'deep research',
+              body: '深度研究完成',
+            });
+          } else {
             emitter.emit("searchFinished");
           }
-          
           clearInterval(id);
         }
       }, 1000);
