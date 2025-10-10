@@ -1,6 +1,6 @@
 "use client";
 import { useTranslation } from "react-i18next";
-import { Settings, Github, History, BookText } from "lucide-react";
+import { Settings, Github, History, BookText, ExternalLink } from "lucide-react";
 import { Button } from "@/components/Internal/Button";
 import { useGlobalStore } from "@/store/global";
 
@@ -9,6 +9,10 @@ const VERSION = process.env.NEXT_PUBLIC_VERSION;
 function Header() {
   const { t } = useTranslation();
   const { setOpenSetting, setOpenHistory, setOpenKnowledge } = useGlobalStore();
+
+  function handleNewPage() {
+    window.open("/?new=true", "_blank");
+  }
 
   return (
     <>
@@ -30,6 +34,15 @@ function Header() {
               <Github className="h-5 w-5" />
             </Button>
           </a>
+          <Button
+            className="h-8 w-8"
+            title={t("newPage")}
+            variant="ghost"
+            size="icon"
+            onClick={handleNewPage}
+          >
+            <ExternalLink className="h-5 w-5" />
+          </Button>
           <Button
             className="h-8 w-8"
             variant="ghost"

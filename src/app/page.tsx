@@ -1,10 +1,11 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useGlobalStore } from "@/store/global";
 import { useSettingStore } from "@/store/setting";
+import { useTaskStore } from "@/store/task";
 import '@ant-design/v5-patch-for-react-19';
 
 const Header = dynamic(() => import("@/components/Internal/Header"));
@@ -31,11 +32,19 @@ function Home() {
 
   const { theme } = useSettingStore();
   const { setTheme } = useTheme();
+  const { reset } = useTaskStore();
 
   useLayoutEffect(() => {
     const settingStore = useSettingStore.getState();
     setTheme(settingStore.theme);
   }, [theme, setTheme]);
+
+  useEffect(() => {
+    if (window.location.search.includes("new=true")) {
+      reset();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [reset]);
   return (
     <div className="max-lg:max-w-screen-md max-w-screen-lg mx-auto px-4">
       <Header />
