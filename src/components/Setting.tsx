@@ -155,8 +155,8 @@ const formSchema = z.object({
   bochaApiProxy: z.string().optional(),
   searxngApiProxy: z.string().optional(),
   searxngScope: z.string().optional(),
-  parallelSearch: z.number().min(1).max(20),
-  searchMaxResult: z.number().min(1).max(20),
+  parallelSearch: z.number().min(1).max(30),
+  searchMaxResult: z.number().min(1).max(30),
   language: z.string().optional(),
   theme: z.string().optional(),
   debug: z.string().optional(),
@@ -3186,7 +3186,7 @@ function Setting({ open, onClose }: SettingProps) {
                           <Slider
                             className="flex-1"
                             value={[field.value]}
-                            max={20}
+                            max={30}
                             min={1}
                             step={1}
                             disabled={form.getValues("enableSearch") === "0"}
@@ -3217,7 +3217,7 @@ function Setting({ open, onClose }: SettingProps) {
                           <Slider
                             className="flex-1"
                             value={[field.value]}
-                            max={20}
+                            max={30}
                             min={1}
                             step={1}
                             disabled={form.getValues("enableSearch") === "0"}
