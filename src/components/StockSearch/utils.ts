@@ -72,7 +72,7 @@ export const generateReplacedText = (
 ) => {
   const financialTable = generateFinancialTable(financialData);
   const costPriceSuggestion = costPrice
-    ? `- 我的成本价是${costPrice}元，请给出一些建议。`
+    ? `- 我的实际成本价是${costPrice}元，不用考虑什么复权分红的，请给出一些建议。`
     : '';
   
   const replacements: Record<typeof AVAILABLE_VARIABLES[number], string> = {

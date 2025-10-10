@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { setInterval, clearInterval } from "worker-timers";
 
 function useAccurateTimer() {
   const [time, setTime] = useState(0);
@@ -26,13 +27,11 @@ function useAccurateTimer() {
       const tick = () => {
         if (startTimeRef.current !== null) {
           setTime(Date.now() - startTimeRef.current);
-          // Using requestAnimationFrame
-          timerRef.current = requestAnimationFrame(tick);
         }
       };
 
-      // Start the animation frame loop
-      timerRef.current = requestAnimationFrame(tick);
+      // Start the interval loop using worker-timers
+      timerRef.current = setInterval(tick, 100);
     }
   }
 
@@ -40,7 +39,7 @@ function useAccurateTimer() {
     const { keepTime = false } = params || {};
     if (timerRef.current) {
       setIsRunning(false);
-      cancelAnimationFrame(timerRef.current);
+      clearInterval(timerRef.current);
       timerRef.current = null;
     }
     !keepTime && setTime(0);
@@ -49,7 +48,7 @@ function useAccurateTimer() {
   useEffect(() => {
     return () => {
       if (timerRef.current) {
-        cancelAnimationFrame(timerRef.current);
+        clearInterval(timerRef.current);
       }
     };
   }, []);
