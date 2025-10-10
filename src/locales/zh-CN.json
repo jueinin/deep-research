@@ -30,7 +30,9 @@
       "save": "保存",
       "copy": "复制",
       "export": "导出",
-      "delete": "删除"
+      "delete": "删除",
+      "backToTop": "回到顶部",
+      "jumpToReport": "跳到报告"
     },
     "topic": {
       "title": "1. 研究方向",

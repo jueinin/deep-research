@@ -30,7 +30,9 @@
       "save": "Guardar",
       "copy": "Copiar",
       "export": "Exportar",
-      "delete": "Eliminar"
+      "delete": "Eliminar",
+      "backToTop": "Volver arriba",
+      "jumpToReport": "Ir al informe"
     },
     "topic": {
       "title": "1. Definición de la investigación",

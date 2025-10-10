@@ -30,7 +30,9 @@
       "save": "Lưu",
       "copy": "Sao chép",
       "export": "Xuất",
-      "delete": "Xóa"
+      "delete": "Xóa",
+      "backToTop": "Về đầu trang",
+      "jumpToReport": "Đến báo cáo"
     },
     "topic": {
       "title": "1. Chủ Đề Nghiên Cứu",

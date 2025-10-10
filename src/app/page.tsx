@@ -3,6 +3,8 @@ import dynamic from "next/dynamic";
 import { useLayoutEffect, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
+import { FloatButton } from "antd";
+import { VerticalAlignTopOutlined, FileTextOutlined } from "@ant-design/icons";
 import { useGlobalStore } from "@/store/global";
 import { useSettingStore } from "@/store/setting";
 import { useTaskStore } from "@/store/task";
@@ -47,6 +49,13 @@ function Home() {
   }, [reset]);
   const { autoMode } = useSettingStore();
 
+  const scrollToFinalReport = () => {
+    const element = document.getElementById("final-report");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div className="max-lg:max-w-screen-md max-w-screen-lg mx-auto px-4">
       <Header />
@@ -67,8 +76,22 @@ function Home() {
         <Topic />
         <Feedback />
         <SearchResult />
-        <FinalReport />
+        <div id="final-report">
+          <FinalReport />
+        </div>
       </main>
+      <FloatButton.Group shape="circle" className="print:hidden">
+        <FloatButton
+          icon={<FileTextOutlined />}
+          tooltip={t("research.common.jumpToReport")}
+          onClick={scrollToFinalReport}
+        />
+        <FloatButton.BackTop
+          icon={<VerticalAlignTopOutlined />}
+          tooltip={t("research.common.backToTop")}
+          visibilityHeight={200}
+        />
+      </FloatButton.Group>
       <footer className="my-4 text-center text-sm text-gray-600 print:hidden">
         <a href="https://github.com/u14app/" target="_blank">
           {t("copyright", {
