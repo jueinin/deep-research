@@ -22,7 +22,7 @@ export const shortPrompt = `高景气成长投资分析一下{{market}} {{股票
 
 export const longPrompt = `${shortPrompt}
 
-Z
+
 生成研究报告方案的时候，请参考如下方案，大纲类似一点
 \`\`\`
 研究报告方案
