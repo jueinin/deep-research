@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     image: deep-research
     container_name: deep-research
+    restart: unless-stopped
     env_file:
       - .env
     # ports:
