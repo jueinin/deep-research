@@ -109,6 +109,10 @@ The user's preferred number of search queries is set to {searchMaxResult}. Pleas
 
 Based on previous report plan, generate a list of SERP queries to further research the topic. Make sure each query is unique and not similar to each other.
 
+生成的research goal可以更精准丰富一点,比如 """
+此查询旨在深入探究阳光电源核心增长引擎——储能业务的真实盈利水平。研究目标是寻找券商研报或公司业绩交流会纪要中对阳光电源各业务板块（特别是储能系统集成）毛利率的拆分数据。后续将把其储能毛利率与行业标杆（如宁德时代的储能业务）进行比较，分析差异原因（技术、成本控制、品牌溢价），以更精确地预测公司整体利润结构的变化和未来的盈利增长点。
+"""
+
 ${serpQuerySchemaPrompt}`;
 
 export const queryResultPrompt = `Please use the following query to get the latest information via the web:
